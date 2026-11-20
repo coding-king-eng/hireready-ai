@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HireReady 🧠 — AI Interview Coach</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+          background: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 45%, #020617 100%);
+          min-height: 100vh;
+        }
+        .glass {
+          background: rgba(15, 23, 42, 0.72);
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+<!-- Navbar -->
+<header class="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <button onclick="showView('setup')" class="flex items-center gap-2.5 text-left group">
+            <span class="text-2xl">🧠</span>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white group-hover:text-indigo-400 transition">HireReady</h1>
+                <p class="text-[11px] text-slate-400 -mt-0.5">AI Technical Interview Coach</p>
+            </div>
+        </button>
+        <div class="flex items-center gap-3">
+            <button onclick="showView('setup')" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                + New Mock
+            </button>
+            <a href="/docs" target="_blank" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-indigo-400 text-slate-300 hover:text-white transition">
+                API Docs
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-8">
+    <!-- Toast / Error Banner -->
+    <div id="errorBanner" class="hidden mb-6 p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-sm"></div>
+
+    <!-- VIEW 1: SETUP & SESSION HISTORY -->
+    <section id="setupView" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mb-4">
+          ⚡ Structured 0–10 AI Rubric Evaluation
+        </span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
+            <p class="text-slate-400 text-sm sm:text-base mb-6">
+                Pick your target role and seniority level. Answer tailored technical questions and get instant structured feedback on strengths, missing concepts, and weak topics.
+            </p>
+
+            <form id="startForm" class="space-y-5">
+                <div>
+                    <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role</label>
+                    <select id="roleSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="levelSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Experience Level</label>
+                        <select id="levelSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                    </div>
+                    <div>
+                        <label for="countSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Question Count</label>
+                        <select id="countSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            <option value="3">3 Questions (Quick Sprint)</option>
+                            <option value="5" selected>5 Questions (Standard Round)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
+                    <span>Start Mock Interview</span>
+                    <span>→</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Recent Sessions Sidebar -->
+        <aside class="glass rounded-2xl p-6 shadow-xl flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
+                <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
+            </div>
+            <div id="historyList" class="space-y-3 overflow-y-auto max-h-[380px] pr-1 text-sm text-slate-400">
+                Loading sessions...
+            </div>
+        </aside>
+    </section>
+
+    <!-- VIEW 2: LIVE INTERVIEW ARENA -->
+    <section id="interviewView" class="hidden max-w-3xl mx-auto space-y-6">
+        <!-- Top Progress Bar -->
+        <div class="glass rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <p id="activeRoleLabel" class="text-sm font-semibold text-white"></p>
+                <p id="activeLevelLabel" class="text-xs text-slate-400"></p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-[11px] uppercase tracking-wider text-slate-400">Question</p>
+                    <p id="progressText" class="text-sm font-bold text-indigo-300">1 / 5</p>
+                </div>
+                <div class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-sm text-emerald-400" id="timerDisplay">
+                    00:00
+                </div>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-300" style="width: 20%"></div>
+            </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between gap-2">
+          <span id="topicTag" class="px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+            Topic
+          </span>
+                <span id="turnStatusBadge" class="text-xs text-slate-400">Awaiting your answer</span>
+            </div>
+
+            <h3 id="questionText" class="text-lg sm:text-xl font-semibold text-white leading-relaxed"></h3>
+
+            <div>
+                <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Your Answer</label>
+                <textarea
+                        id="answerInput"
+                        rows="6"
+                        placeholder="Explain your approach clearly—mention trade-offs, edge cases, or time/space complexity where relevant..."
+                        class="w-full rounded-xl bg-slate-950/80 border border-slate-700 p-4 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
+                ></textarea>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs text-slate-400">Tip: Structure answers with Concept → Example → Trade-off.</p>
+                <button id="submitAnswerBtn" onclick="submitAnswer()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-600/25 transition">
+                    Submit & Evaluate Answer
+                </button>
+            </div>
+        </div>
+
+        <!-- Instant AI Feedback Card -->
+        <div id="feedbackCard" class="hidden glass rounded-2xl p-6 sm:p-8 border-indigo-500/30 space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-400">AI Evaluation Result</p>
+                    <h4 class="text-lg font-bold text-white">Structured Rubric Feedback</h4>
+                </div>
+                <div class="flex items-baseline gap-1 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700">
+                    <span id="feedbackScore" class="text-2xl font-extrabold text-emerald-400">0.0</span>
+                    <span class="text-xs text-slate-400">/ 10</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                    <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2">✅ Strengths</h5>
+                    <ul id="strengthsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
+                </div>
+                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                    <h5 class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">⚠️ Gaps to Improve</h5>
+                    <ul id="gapsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25">
+                <h5 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1.5">💡 Ideal Answer Hint</h5>
+                <p id="idealHintText" class="text-sm text-slate-200 leading-relaxed"></p>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="nextBtn" onclick="nextQuestionOrFinish()" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition">
+                    Next Question →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW 3: FINAL DIAGNOSTIC SUMMARY -->
+    <section id="summaryView" class="hidden max-w-3xl mx-auto space-y-6">
+        <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Session Complete</span>
+                    <h2 class="text-2xl font-bold text-white mt-1">Interview Readiness Report</h2>
+                    <p id="summaryMeta" class="text-sm text-slate-400 mt-0.5"></p>
+                </div>
+                <div class="text-center px-5 py-3 rounded-2xl bg-indigo-500/15 border border-indigo-500/30">
+                    <p id="summaryReadiness" class="text-3xl font-extrabold text-indigo-300">0%</p>
+                    <p class="text-[11px] uppercase tracking-wider text-slate-400">Readiness</p>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs text-slate-400">Hiring Verdict</p>
+                    <p id="summaryVerdict" class="text-base font-bold text-white"></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-400">Average Score</p>
+                    <p id="summaryAvgScore" class="text-lg font-bold text-emerald-400">0.0 / 10</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2">🏆 Strong Topics</h4>
+                    <div id="strongTopicsWrap" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/25">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-rose-300 mb-2">🎯 Weak Topics to Revise</h4>
+                    <div id="weakTopicsWrap" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-700/80">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3">📌 Personalized Revision Plan</h4>
+                <ul id="actionPlanList" class="space-y-2 text-sm text-slate-200 list-disc list-inside"></ul>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <button onclick="showView('setup')" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white transition">
+                    Start Another Mock Interview
+                </button>
+                <button onclick="window.print()" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-medium text-sm text-slate-200 transition">
+                    Print / Save Report PDF
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    let currentSession = null;
+    let currentTurnIndex = 0;
+    let timerInterval = null;
+    let elapsedSeconds = 0;
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("errorBanner");
+      if (!msg) {
+        el.classList.add("hidden");
+        el.textContent = "";
+        return;
+      }
+      el.textContent = msg;
+      el.classList.remove("hidden");
+    }
+
+    function showView(viewName) {
+      showError("");
+      stopTimer();
+      document.getElementById("setupView").classList.toggle("hidden", viewName !== "setup");
+      document.getElementById("interviewView").classList.toggle("hidden", viewName !== "interview");
+      document.getElementById("summaryView").classList.toggle("hidden", viewName !== "summary");
+      if (viewName === "setup") loadHistory();
+    }
+
+    function startTimer() {
+      stopTimer();
+      elapsedSeconds = 0;
+      updateTimerLabel();
+      timerInterval = setInterval(() => {
+        elapsedSeconds += 1;
+        updateTimerLabel();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerLabel() {
+      const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
+      const secs = String(elapsedSeconds % 60).padStart(2, "0");
+      document.getElementById("timerDisplay").textContent = `${mins}:${secs}`;
+    }
+
+    async function loadRoles() {
+      try {
+        const res = await fetch("/api/roles");
+        const data = await res.json();
+        document.getElementById("roleSelect").innerHTML = data.roles
+          .map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`)
+          .join("");
+        document.getElementById("levelSelect").innerHTML = data.levels
+          .map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`)
+          .join("");
+      } catch (err) {
+        showError("Could not load roles from API. Make sure FastAPI is running.");
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/sessions");
+        const sessions = await res.json();
+        document.getElementById("sessionCountBadge").textContent = sessions.length;
+        const container = document.getElementById("historyList");
+        if (!sessions.length) {
+          container.innerHTML = `<p class="text-slate-500 text-xs">No mock sessions yet. Start your first interview on the left!</p>`;
+          return;
+        }
+        container.innerHTML = sessions.map(s => `
+          <button onclick="openExistingSession(${s.id})" class="w-full text-left p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/40 transition">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-semibold text-slate-100 text-xs truncate">${escapeHtml(s.role)}</span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${s.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}">
+                ${s.avg_score}/10
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400">
+              <span>${escapeHtml(s.level)}</span>
+              <span>${s.status === 'completed' ? 'View Report →' : 'Resume →'}</span>
+            </div>
+          </button>
+        `).join("");
+      } catch (err) {
+        document.getElementById("historyList").innerHTML = `<p class="text-rose-400 text-xs">Failed to load history.</p>`;
+      }
+    }
+
+    document.getElementById("startForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showError("");
+      const btn = document.getElementById("startBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<span>Generating Questions...</span>`;
+
+      try {
+        const payload = {
+          role: document.getElementById("roleSelect").value,
+          level: document.getElementById("levelSelect").value,
+          question_count: Number(document.getElementById("countSelect").value),
+        };
+        const res = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to create interview session.");
+        currentSession = await res.json();
+        currentTurnIndex = 0;
+        renderCurrentQuestion();
+        showView("interview");
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Start Mock Interview</span><span>→</span>`;
+      }
+    });
+
+    async function openExistingSession(sessionId) {
+      showError("");
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}`);
+        if (!res.ok) throw new Error("Could not load session.");
+        currentSession = await res.json();
+        if (currentSession.status === "completed") {
+          await loadSummary(sessionId);
+          return;
+        }
+        const nextUnanswered = currentSession.turns.findIndex(t => t.score === null);
+        currentTurnIndex = nextUnanswered >= 0 ? nextUnanswered : 0;
+        renderCurrentQuestion();
+        showView("interview");
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function renderCurrentQuestion() {
+      const turn = currentSession.turns[currentTurnIndex];
+      const total = currentSession.turns.length;
+
+      document.getElementById("activeRoleLabel").textContent = currentSession.role;
+      document.getElementById("activeLevelLabel").textContent = `${currentSession.level} • Session #${currentSession.id}`;
+      document.getElementById("progressText").textContent = `${currentTurnIndex + 1} / ${total}`;
+      document.getElementById("progressBar").style.width = `${((currentTurnIndex + 1) / total) * 100}%`;
+
+      document.getElementById("topicTag").textContent = turn.topic_tag;
+      document.getElementById("questionText").textContent = turn.question_text;
+
+      const answerBox = document.getElementById("answerInput");
+      const submitBtn = document.getElementById("submitAnswerBtn");
+      const feedbackCard = document.getElementById("feedbackCard");
+
+      if (turn.score !== null) {
+        answerBox.value = turn.user_answer || "";
+        answerBox.disabled = true;
+        submitBtn.classList.add("hidden");
+        document.getElementById("turnStatusBadge").textContent = `Scored ${turn.score}/10`;
+        renderFeedback(turn);
+      } else {
+        answerBox.value = "";
+        answerBox.disabled = false;
+        submitBtn.classList.remove("hidden");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit & Evaluate Answer";
+        document.getElementById("turnStatusBadge").textContent = "Awaiting your answer";
+        feedbackCard.classList.add("hidden");
+        startTimer();
+      }
+    }
+
+    async function submitAnswer() {
+      showError("");
+      const turn = currentSession.turns[currentTurnIndex];
+      const userAnswer = document.getElementById("answerInput").value.trim();
+      if (!userAnswer) {
+        showError("Please type your answer before submitting.");
+        return;
+      }
+
+      const btn = document.getElementById("submitAnswerBtn");
+      btn.disabled = true;
+      btn.textContent = "Evaluating with AI...";
+      stopTimer();
+
+      try {
+        const res = await fetch(`/api/sessions/${currentSession.id}/answer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ turn_id: turn.id, user_answer: userAnswer }),
+        });
+        if (!res.ok) throw new Error("Failed to evaluate answer.");
+        const updatedTurn = await res.json();
+        currentSession.turns[currentTurnIndex] = updatedTurn;
+
+        document.getElementById("answerInput").disabled = true;
+        btn.classList.add("hidden");
+        document.getElementById("turnStatusBadge").textContent = `Scored ${updatedTurn.score}/10`;
+        renderFeedback(updatedTurn);
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = "Submit & Evaluate Answer";
+      }
+    }
+
+    function renderFeedback(turn) {
+      const scoreEl = document.getElementById("feedbackScore");
+      scoreEl.textContent = Number(turn.score).toFixed(1);
+      scoreEl.className = `text-2xl font-extrabold ${
+        turn.score >= 7.5 ? "text-emerald-400" : turn.score >= 5 ? "text-amber-400" : "text-rose-400"
+      }`;
+
+      document.getElementById("strengthsList").innerHTML = (turn.strengths || [])
+        .map(item => `<li>${escapeHtml(item)}</li>`).join("");
+      document.getElementById("gapsList").innerHTML = (turn.gaps || [])
+        .map(item => `<li>${escapeHtml(item)}</li>`).join("");
+      document.getElementById("idealHintText").textContent = turn.ideal_hint || "";
+
+      const isLast = currentTurnIndex >= currentSession.turns.length - 1;
+      document.getElementById("nextBtn").textContent = isLast
+        ? "Finish & View Readiness Report →"
+        : "Next Question →";
+      document.getElementById("feedbackCard").classList.remove("hidden");
+    }
+
+    async function nextQuestionOrFinish() {
+      if (currentTurnIndex < currentSession.turns.length - 1) {
+        currentTurnIndex += 1;
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        await loadSummary(currentSession.id);
+      }
+    }
+
+    async function loadSummary(sessionId) {
+      showError("");
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}/summary`);
+        if (!res.ok) throw new Error("Could not load session summary.");
+        const data = await res.json();
+
+        document.getElementById("summaryMeta").textContent =
+          `${data.role} • ${data.level} • ${data.answered_count}/${data.total_questions} Answered`;
+        document.getElementById("summaryReadiness").textContent = `${data.readiness_percent}%`;
+        document.getElementById("summaryVerdict").textContent = data.verdict;
+        document.getElementById("summaryAvgScore").textContent = `${data.avg_score} / 10`;
+
+        document.getElementById("strongTopicsWrap").innerHTML = data.strong_topics.length
+          ? data.strong_topics.map(t => `<span class="px-2.5 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-200">${escapeHtml(t)}</span>`).join("")
+          : `<span class="text-xs text-slate-400">Keep practicing to lock in strong topics.</span>`;
+
+        document.getElementById("weakTopicsWrap").innerHTML = data.weak_topics.length
+          ? data.weak_topics.map(t => `<span class="px-2.5 py-1 rounded-full text-xs bg-rose-500/20 text-rose-200">${escapeHtml(t)}</span>`).join("")
+          : `<span class="text-xs text-emerald-300">No weak topics detected!</span>`;
+
+        document.getElementById("actionPlanList").innerHTML = data.action_plan
+          .map(step => `<li>${escapeHtml(step)}</li>`).join("");
+
+        showView("summary");
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    // Boot
+    loadRoles();
+    loadHistory();
+</script>
+</body>
+</html>
