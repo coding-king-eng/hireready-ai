@@ -232,3 +232,36 @@ def test_session_export_markdown_and_json():
     assert len(exported["transcript"]) == 1
 
     assert client.get("/api/sessions/9999/export?format=markdown").status_code == 404
+
+
+def test_role_breakdown_and_weak_topic_drill():
+    created = client.post(
+        "/api/sessions",
+        json={"role": "Frontend Engineer (React / JS)", "level": "Intern", "question_count": 1},
+    ).json()
+    session_id = created["id"]
+    turn_id = created["turns"][0]["id"]
+
+    client.post(
+        f"/api/sessions/{session_id}/answer",
+        json={"turn_id": turn_id, "user_answer": "Short"},
+    )
+
+    analytics = client.get("/api/analytics").json()
+    assert len(analytics["role_breakdown"]) == 1
+    assert analytics["role_breakdown"][0]["role"] == "Frontend Engineer (React / JS)"
+
+    summary = client.get(f"/api/sessions/{session_id}/summary").json()
+    assert len(summary["weak_topics"]) == 1
+
+    drill = client.post(
+        "/api/sessions",
+        json={
+            "role": summary["role"],
+            "level": summary["level"],
+            "question_count": 3,
+            "focus_topic": ", ".join(summary["weak_topics"]),
+        },
+    )
+    assert drill.status_code == 201
+    assert drill.json()["total_questions"] == 3

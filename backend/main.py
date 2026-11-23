@@ -332,10 +332,14 @@ def get_analytics(db: Session = Depends(get_db)):
         if s.avg_score and s.avg_score > 0:
             role_scores.setdefault(s.role, []).append(s.avg_score)
 
-    role_breakdown = [
-        {"role": role, "sessions": len(scores), "avg_score": round(sum(scores) / len(scores), 2)}
-        for role, scores in role_scores.items()
-    ]
+    role_breakdown = sorted(
+        [
+            {"role": role, "sessions": len(scores), "avg_score": round(sum(scores) / len(scores), 2)}
+            for role, scores in role_scores.items()
+        ],
+        key=lambda item: item["avg_score"],
+        reverse=True,
+    )
 
     return {
         "total_sessions": total_sessions,
