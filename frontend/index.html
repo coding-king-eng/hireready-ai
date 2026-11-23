@@ -68,7 +68,7 @@
             </div>
         </div>
 
-        <!-- Role Mastery Breakdown (appears once at least 1 session is scored) -->
+        <!-- Role Mastery Breakdown -->
         <div id="roleBreakdownSection" class="hidden glass rounded-2xl p-5">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">📊 Role Mastery Breakdown</h3>
@@ -79,9 +79,19 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mb-4">
-            ⚡ Structured 0–10 AI Rubric + Voice Mode
-          </span>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+              ⚡ Structured 0–10 AI Rubric + Voice Mode
+            </span>
+                    <button
+                            id="demoBtn"
+                            type="button"
+                            onclick="loadSampleDemo()"
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/30 transition"
+                    >
+                        ✨ Load Sample Demo Report
+                    </button>
+                </div>
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
                 <p class="text-slate-400 text-sm sm:text-base mb-6">
                     Pick your target role, seniority level, and optional focus topics. Type or speak your answers to get instant rubric feedback.
@@ -239,9 +249,35 @@
                 <p id="idealHintText" class="text-sm text-slate-200 leading-relaxed"></p>
             </div>
 
-            <div id="followUpWrap" class="hidden p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/25">
-                <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300 mb-1.5">🎤 Interviewer Follow-Up Probe</h5>
+            <!-- Interactive Interviewer Follow-Up Probe -->
+            <div id="followUpWrap" class="hidden p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/25 space-y-3">
+                <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">🎤 Interviewer Follow-Up Probe</h5>
                 <p id="followUpText" class="text-sm text-slate-200 leading-relaxed"></p>
+
+                <div class="pt-1 space-y-2">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input
+                                id="followUpInput"
+                                type="text"
+                                maxlength="1000"
+                                placeholder="Optional: Practice answering this follow-up probe..."
+                                class="flex-1 rounded-lg bg-slate-950/90 border border-fuchsia-500/30 px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-fuchsia-400"
+                        />
+                        <button
+                                id="submitFollowUpBtn"
+                                type="button"
+                                onclick="submitFollowUp()"
+                                class="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 font-semibold text-xs text-white transition whitespace-nowrap"
+                        >
+                            Check Follow-Up
+                        </button>
+                    </div>
+                    <div id="followUpResult" class="hidden p-3 rounded-lg bg-slate-950/80 border border-fuchsia-500/25 text-xs space-y-1">
+                        <p id="followUpVerdict" class="font-bold text-fuchsia-300"></p>
+                        <p id="followUpCoachNote" class="text-slate-200"></p>
+                        <p id="followUpBonusTip" class="text-slate-400 italic"></p>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end">
@@ -539,7 +575,14 @@
         document.getElementById("sessionCountBadge").textContent = sessions.length;
         const container = document.getElementById("historyList");
         if (!sessions.length) {
-          container.innerHTML = `<p class="text-slate-500 text-xs">No mock sessions yet. Start your first interview on the left!</p>`;
+          container.innerHTML = `
+            <div class="space-y-3">
+              <p class="text-slate-500 text-xs">No mock sessions yet. Start an interview on the left or preview a sample report:</p>
+              <button onclick="loadSampleDemo()" class="w-full py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-200 text-xs font-medium transition">
+                ✨ Preview Sample Demo Report
+              </button>
+            </div>
+          `;
           return;
         }
         container.innerHTML = sessions.map(s => `
@@ -567,6 +610,25 @@
         `).join("");
       } catch (err) {
         document.getElementById("historyList").innerHTML = `<p class="text-rose-400 text-xs">Failed to load history.</p>`;
+      }
+    }
+
+    async function loadSampleDemo() {
+      showError("");
+      const btn = document.getElementById("demoBtn");
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Loading Demo...";
+      try {
+        const res = await fetch("/api/sessions/demo", { method: "POST" });
+        if (!res.ok) throw new Error("Could not create sample demo session.");
+        const demoSession = await res.json();
+        await loadSummary(demoSession.id);
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
       }
     }
 
@@ -775,6 +837,43 @@
       }
     }
 
+    async function submitFollowUp() {
+      showError("");
+      const turn = currentSession.turns[currentTurnIndex];
+      const followUpQuestion = document.getElementById("followUpText").textContent.trim();
+      const followUpAnswer = document.getElementById("followUpInput").value.trim();
+      if (!followUpAnswer) {
+        showError("Type a quick response to the interviewer's follow-up probe first.");
+        return;
+      }
+
+      const btn = document.getElementById("submitFollowUpBtn");
+      btn.disabled = true;
+      btn.textContent = "Checking...";
+      try {
+        const res = await fetch(`/api/sessions/${currentSession.id}/followup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turn_id: turn.id,
+            follow_up_question: followUpQuestion,
+            follow_up_answer: followUpAnswer,
+          }),
+        });
+        if (!res.ok) throw new Error("Could not evaluate follow-up response.");
+        const data = await res.json();
+        document.getElementById("followUpVerdict").textContent = `✅ ${data.verdict}`;
+        document.getElementById("followUpCoachNote").textContent = data.coach_note;
+        document.getElementById("followUpBonusTip").textContent = `💡 Pro Tip: ${data.bonus_tip}`;
+        document.getElementById("followUpResult").classList.remove("hidden");
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Check Follow-Up";
+      }
+    }
+
     function renderFeedback(turn) {
       const scoreEl = document.getElementById("feedbackScore");
       scoreEl.textContent = Number(turn.score).toFixed(1);
@@ -789,6 +888,8 @@
       document.getElementById("idealHintText").textContent = turn.ideal_hint || "";
 
       const followUpWrap = document.getElementById("followUpWrap");
+      document.getElementById("followUpInput").value = "";
+      document.getElementById("followUpResult").classList.add("hidden");
       if (turn.follow_up) {
         document.getElementById("followUpText").textContent = turn.follow_up;
         followUpWrap.classList.remove("hidden");

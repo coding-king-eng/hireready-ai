@@ -14,6 +14,18 @@ class AnswerSubmit(BaseModel):
     user_answer: str = Field(..., min_length=1, max_length=5000)
 
 
+class FollowUpSubmit(BaseModel):
+    turn_id: int
+    follow_up_question: str = Field(..., min_length=3, max_length=1000)
+    follow_up_answer: str = Field(..., min_length=1, max_length=3000)
+
+
+class FollowUpFeedbackOut(BaseModel):
+    verdict: str
+    coach_note: str
+    bonus_tip: str
+
+
 class TurnOut(BaseModel):
     id: int
     question_number: int

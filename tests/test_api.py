@@ -265,3 +265,35 @@ def test_role_breakdown_and_weak_topic_drill():
     )
     assert drill.status_code == 201
     assert drill.json()["total_questions"] == 3
+
+
+def test_demo_session_and_followup_evaluation():
+    demo_res = client.post("/api/sessions/demo")
+    assert demo_res.status_code == 201
+    demo = demo_res.json()
+    assert demo["status"] == "completed"
+    assert demo["total_questions"] == 3
+    assert demo["avg_score"] == 7.0
+
+    summary_res = client.get(f"/api/sessions/{demo['id']}/summary")
+    assert summary_res.status_code == 200
+    assert "Caching & Scalability" in summary_res.json()["weak_topics"]
+
+    turn_id = demo["turns"][0]["id"]
+    followup_res = client.post(
+        f"/api/sessions/{demo['id']}/followup",
+        json={
+            "turn_id": turn_id,
+            "follow_up_question": "What happens if you call time.sleep(5) inside an async def FastAPI endpoint?",
+            "follow_up_answer": "Calling time.sleep inside an async def route blocks the single asyncio event loop thread completely, stalling all other concurrent user requests until the sleep finishes.",
+        },
+    )
+    assert followup_res.status_code == 200
+    fb = followup_res.json()
+    assert fb["verdict"] == "Strong Follow-Up"
+    assert len(fb["coach_note"]) > 5
+
+    assert client.post(
+        "/api/sessions/9999/followup",
+        json={"turn_id": turn_id, "follow_up_question": "Test?", "follow_up_answer": "Sample answer"},
+    ).status_code == 404

@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .ai_engine import evaluate_answer, generate_questions, get_engine_status
+from .ai_engine import evaluate_answer, evaluate_followup, generate_questions, get_engine_status
 from .database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
@@ -151,6 +151,79 @@ def list_sessions(db: Session = Depends(get_db)):
     ]
 
 
+@app.post("/api/sessions/demo", response_model=schemas.SessionDetailOut, status_code=201)
+def create_demo_session(db: Session = Depends(get_db)):
+    """Creates a realistic pre-graded 3-question mock session so visitors can preview reports immediately."""
+    demo_turns = [
+        {
+            "topic_tag": "Async & Concurrency",
+            "question_text": "In FastAPI, when should you define an endpoint with `async def` versus standard `def`?",
+            "user_answer": "Use `async def` when awaiting non-blocking I/O like async HTTP or DB calls so the event loop stays free, and standard `def` for blocking CPU or sync library work so FastAPI runs it in a worker threadpool.",
+            "score": 9.0,
+            "strengths": [
+                "Accurately distinguished event-loop non-blocking I/O from threadpool execution.",
+                "Explained practical impact on FastAPI concurrency.",
+            ],
+            "gaps": ["Mention that calling blocking I/O inside `async def` stalls the entire event loop."],
+            "ideal_hint": "Use `async def` for non-blocking I/O operations (awaiting async DB/HTTP calls); use standard `def` for blocking/CPU-bound work so FastAPI runs it in a separate threadpool without blocking the event loop.",
+        },
+        {
+            "topic_tag": "Database Indexing",
+            "question_text": "How does a B-Tree database index speed up SELECT queries, and what is the performance trade-off on INSERT/UPDATE operations?",
+            "user_answer": "B-Tree keeps keys sorted for O(log n) lookup instead of scanning every row, though writes become slightly slower because the index must also be updated.",
+            "score": 7.5,
+            "strengths": [
+                "Correctly stated O(log n) lookup complexity vs full table scans.",
+                "Identified write amplification trade-off on INSERT/UPDATE.",
+            ],
+            "gaps": ["Mention page splits or composite index column ordering rules."],
+            "ideal_hint": "A B-Tree index keeps sorted keys for O(log n) lookups instead of full table scans, but slows down INSERT/UPDATE/DELETE because the index tree must also be updated.",
+        },
+        {
+            "topic_tag": "Caching & Scalability",
+            "question_text": "Describe the Cache-Aside (Lazy Loading) pattern with Redis and how you prevent cache stampedes under high traffic.",
+            "user_answer": "We check Redis first and if missing we query the database and save it back to Redis.",
+            "score": 4.5,
+            "strengths": ["Captured the basic read-through flow of Cache-Aside."],
+            "gaps": [
+                "Did not explain TTL expiration or cache stampede mitigations (mutex locks, jittered TTLs).",
+                "Include how stale data is invalidated on writes.",
+            ],
+            "ideal_hint": "App checks Redis first; on miss, reads DB and populates cache with a TTL. Prevent stampedes using mutex locks, jittered TTLs, or background refresh.",
+        },
+    ]
+
+    avg = round(sum(t["score"] for t in demo_turns) / len(demo_turns), 2)
+    session = models.InterviewSession(
+        role="Backend Developer (Python / FastAPI)",
+        level="Junior (0–2 Yrs)",
+        total_questions=len(demo_turns),
+        avg_score=avg,
+        status="completed",
+    )
+    db.add(session)
+    db.flush()
+
+    for idx, item in enumerate(demo_turns, start=1):
+        db.add(
+            models.InterviewTurn(
+                session_id=session.id,
+                question_number=idx,
+                topic_tag=item["topic_tag"],
+                question_text=item["question_text"],
+                user_answer=item["user_answer"],
+                score=item["score"],
+                strengths_json=json.dumps(item["strengths"]),
+                gaps_json=json.dumps(item["gaps"]),
+                ideal_hint=item["ideal_hint"],
+            )
+        )
+
+    db.commit()
+    db.refresh(session)
+    return _serialize_session(session)
+
+
 @app.post("/api/sessions", response_model=schemas.SessionDetailOut, status_code=201)
 def create_interview_session(payload: schemas.SessionCreate, db: Session = Depends(get_db)):
     questions = generate_questions(
@@ -235,6 +308,30 @@ def submit_turn_answer(session_id: int, payload: schemas.AnswerSubmit, db: Sessi
     turn_out = _serialize_turn(turn, hide_hint_if_unanswered=False)
     turn_out.follow_up = result.get("follow_up")
     return turn_out
+
+
+@app.post("/api/sessions/{session_id}/followup", response_model=schemas.FollowUpFeedbackOut)
+def submit_followup_answer(session_id: int, payload: schemas.FollowUpSubmit, db: Session = Depends(get_db)):
+    session = db.query(models.InterviewSession).filter(models.InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found")
+
+    turn = (
+        db.query(models.InterviewTurn)
+        .filter(models.InterviewTurn.id == payload.turn_id, models.InterviewTurn.session_id == session_id)
+        .first()
+    )
+    if not turn:
+        raise HTTPException(status_code=404, detail="Interview question turn not found")
+
+    feedback = evaluate_followup(
+        role=session.role,
+        level=session.level,
+        topic_tag=turn.topic_tag,
+        follow_up_question=payload.follow_up_question,
+        follow_up_answer=payload.follow_up_answer,
+    )
+    return schemas.FollowUpFeedbackOut(**feedback)
 
 
 @app.get("/api/sessions/{session_id}/summary", response_model=schemas.SessionSummaryOut)

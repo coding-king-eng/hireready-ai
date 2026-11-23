@@ -358,3 +358,55 @@ def evaluate_answer(
         "ideal_hint": ideal_hint,
         "follow_up": default_follow_up,
     }
+
+
+def evaluate_followup(
+        role: str,
+        level: str,
+        topic_tag: str,
+        follow_up_question: str,
+        follow_up_answer: str,
+) -> Dict[str, str]:
+    """Evaluates a candidate's response to an interviewer follow-up probe."""
+    cleaned = (follow_up_answer or "").strip()
+    if len(cleaned.split()) < 6:
+        return {
+            "verdict": "Too Brief",
+            "coach_note": f"Your follow-up reply needs more concrete reasoning around {topic_tag}.",
+            "bonus_tip": "Mention a specific bottleneck, failure mode, or trade-off in 2–3 sentences.",
+        }
+
+    prompt = f"""
+    You are a senior technical interviewer reviewing a candidate's follow-up response.
+    - Role: {role} ({level})
+    - Topic: {topic_tag}
+    - Follow-Up Question: {follow_up_question}
+    - Candidate Follow-Up Answer: {cleaned}
+
+    Return ONLY valid JSON:
+    {{
+      "verdict": "Strong Follow-Up | Solid Attempt | Needs Depth",
+      "coach_note": "1-2 sentence evaluation of how well they handled the follow-up probe",
+      "bonus_tip": "1 concrete senior-level detail that would elevate this answer further"
+    }}
+    """
+    ai_res = _call_gemini_json(prompt)
+    if ai_res and "coach_note" in ai_res:
+        return {
+            "verdict": str(ai_res.get("verdict") or "Solid Attempt").strip(),
+            "coach_note": str(ai_res.get("coach_note") or "").strip(),
+            "bonus_tip": str(ai_res.get("bonus_tip") or f"Quantify latency, memory, or complexity impact in {topic_tag}.").strip(),
+        }
+
+    words = len(cleaned.split())
+    if words >= 18:
+        return {
+            "verdict": "Strong Follow-Up",
+            "coach_note": f"Clear, well-reasoned handling of the {topic_tag} follow-up scenario with practical depth.",
+            "bonus_tip": "In live interviews, briefly mention monitoring or fallback metrics to sound production-ready.",
+        }
+    return {
+        "verdict": "Solid Attempt",
+        "coach_note": f"Good direction on {topic_tag}, though adding one concrete edge case or metric would make it sharper.",
+        "bonus_tip": "Anchor follow-ups with: Bottleneck -> Mitigation -> Trade-off.",
+    }
