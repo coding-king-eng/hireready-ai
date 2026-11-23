@@ -60,6 +60,34 @@ def test_frontend_root_serves_html():
     assert "HireReady" in res.text
 
 
+def test_video_and_normal_interview_modes():
+    video_res = client.post(
+        "/api/sessions",
+        json={
+            "role": "Backend Developer (Python / FastAPI)",
+            "level": "Intern",
+            "question_count": 2,
+            "interviewer": "Marcus Vance",
+            "interview_mode": "video",
+        },
+    )
+    assert video_res.status_code == 201
+    video_session = video_res.json()
+    assert video_session["interviewer"] == "Marcus Vance"
+
+    normal_res = client.post(
+        "/api/sessions",
+        json={
+            "role": "Backend Developer (Python / FastAPI)",
+            "level": "Junior (0–2 Yrs)",
+            "question_count": 2,
+            "interview_mode": "normal",
+        },
+    )
+    assert normal_res.status_code == 201
+    assert normal_res.json()["interviewer"] == "Standard Text Mode"
+
+
 def test_full_interview_lifecycle_and_summary():
     create_res = client.post(
         "/api/sessions",
@@ -74,7 +102,6 @@ def test_full_interview_lifecycle_and_summary():
     session = create_res.json()
     session_id = session["id"]
     assert session["status"] == "in_progress"
-    assert session["interviewer"] == "Marcus Vance"
     assert session["total_questions"] == 2
     assert len(session["turns"]) == 2
 
@@ -133,6 +160,23 @@ def test_senior_staff_questions_and_15_question_round():
     assert data["total_questions"] == 15
     assert len(data["turns"]) == 15
     assert data["interviewer"] == "Priya Nair"
+
+
+def test_ai_assistant_endpoint():
+    res = client.post(
+        "/api/assistant",
+        json={
+            "question": "How do I structure STAR answers for senior interviews?",
+            "context": "Setup Screen",
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "STAR" in data["reply"]
+    assert data["mode"] == "fallback"
+
+    bad_res = client.post("/api/assistant", json={"question": "a"})
+    assert bad_res.status_code == 422
 
 
 def test_error_handling_for_missing_and_invalid_inputs():
@@ -240,4 +284,6 @@ def test_skill_extractor_and_openapi_routes():
 
     schema_res = client.get("/openapi.json")
     assert schema_res.status_code == 200
-    assert "/api/interviewers" in schema_res.json()["paths"]
+    paths = schema_res.json()["paths"]
+    assert "/api/interviewers" in paths
+    assert "/api/assistant" in paths

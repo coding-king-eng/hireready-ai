@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from .ai_engine import (
     FALLBACK_QUESTIONS,
+    ask_ai_assistant,
     evaluate_answer,
     evaluate_followup,
     extract_skills_from_text,
@@ -35,9 +36,9 @@ def _ensure_interviewer_column():
 _ensure_interviewer_column()
 
 app = FastAPI(
-    title="HireReady 🧠 — AI Live Video Interview Coach API",
-    description="Role-based live AI video mock interview simulator & structured rubric evaluator",
-    version="2.0.0",
+    title="HireReady 🧠 — AI Live Video & Standard Interview Coach API",
+    description="Role-based live AI video & standard mock interview simulator, rubric evaluator & AI assistant",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -189,7 +190,7 @@ def health_check():
     return {
         "status": "ok",
         "service": "HireReady AI Interview Coach",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "ai_mode": ai_status["mode"],
         "ai_model": ai_status["model"],
     }
@@ -221,6 +222,12 @@ def list_interviewers():
 def extract_skills(payload: schemas.SkillExtractRequest):
     result = extract_skills_from_text(payload.raw_text)
     return schemas.SkillExtractOut(**result)
+
+
+@app.post("/api/assistant", response_model=schemas.AssistantOut)
+def query_ai_assistant(payload: schemas.AssistantRequest):
+    result = ask_ai_assistant(payload.question, payload.context)
+    return schemas.AssistantOut(**result)
 
 
 @app.get("/api/sessions")
@@ -324,10 +331,16 @@ def create_interview_session(payload: schemas.SessionCreate, db: Session = Depen
         payload.focus_topic,
     )
 
+    interviewer_label = (
+        "Standard Text Mode"
+        if payload.interview_mode == "normal"
+        else (payload.interviewer or "Aanya Sharma").strip()
+    )
+
     session = models.InterviewSession(
         role=payload.role,
         level=payload.level,
-        interviewer=(payload.interviewer or "Aanya Sharma").strip(),
+        interviewer=interviewer_label,
         total_questions=len(questions),
         avg_score=0.0,
         status="in_progress",
@@ -461,7 +474,7 @@ def export_session_report(
     lines = [
         f"# HireReady Interview Readiness Report — Session #{session.id}",
         "",
-        f"- **Interviewer:** {detail.interviewer}",
+        f"- **Mode / Interviewer:** {detail.interviewer}",
         f"- **Role:** {summary.role}",
         f"- **Level:** {summary.level}",
         f"- **Status:** {summary.status}",

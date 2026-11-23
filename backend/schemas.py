@@ -8,6 +8,7 @@ class SessionCreate(BaseModel):
     question_count: int = Field(default=5, ge=1, le=15)
     focus_topic: Optional[str] = Field(default=None, max_length=400)
     interviewer: Optional[str] = Field(default="Aanya Sharma", max_length=100)
+    interview_mode: str = Field(default="video", pattern="^(video|normal)$")
 
 
 class SkillExtractRequest(BaseModel):
@@ -18,6 +19,16 @@ class SkillExtractOut(BaseModel):
     suggested_role: str
     extracted_skills: List[str]
     focus_query: str
+
+
+class AssistantRequest(BaseModel):
+    question: str = Field(..., min_length=2, max_length=2000)
+    context: Optional[str] = Field(default=None, max_length=1000)
+
+
+class AssistantOut(BaseModel):
+    reply: str
+    mode: str
 
 
 class AnswerSubmit(BaseModel):

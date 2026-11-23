@@ -12,7 +12,6 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 SENIOR_LEVEL_KEYWORDS = ("senior", "staff", "principal", "manager", "lead", "architect")
 
-# Core & Mid-Level role-specific question bank (12 engineering tracks)
 FALLBACK_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
     "Backend Developer (Python / FastAPI)": [
         {
@@ -340,7 +339,6 @@ FALLBACK_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
     ],
 }
 
-# Senior / Staff / Principal / Engineering Manager question bank
 SENIOR_STAFF_QUESTIONS: List[Dict[str, str]] = [
     {
         "topic_tag": "Multi-Region Architecture",
@@ -427,6 +425,79 @@ def _call_gemini_json(prompt: str) -> Dict[str, Any] | None:
         return _extract_json(response.text or "")
     except Exception:
         return None
+
+
+def _call_gemini_text(prompt: str) -> str | None:
+    """Calls Google Gemini API for plain-text assistant guidance."""
+    status = get_engine_status()
+    if status["mode"] != "gemini":
+        return None
+    try:
+        from google import genai
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").strip())
+        response = client.models.generate_content(
+            model=status["model"],
+            contents=prompt,
+            config={"temperature": 0.5},
+        )
+        text = (response.text or "").strip()
+        return text if text else None
+    except Exception:
+        return None
+
+
+def ask_ai_assistant(question: str, context: str | None = None) -> Dict[str, str]:
+    """Provides instant AI coaching, technical explanations, and app troubleshooting help."""
+    cleaned_q = (question or "").strip()
+    clean_ctx = (context or "").strip()
+    ctx_block = f"\nCurrent User Screen Context: {clean_ctx}" if clean_ctx else ""
+
+    prompt = f"""
+    You are the built-in AI Interview Coach & Support Assistant inside HireReady (a mock technical interview web app).
+    Help the user clearly, concisely, and practically with:
+    1. Technical interview concepts, system design trade-offs, coding patterns, or behavioral (STAR) answer framing.
+    2. Using HireReady features: Live AI Video Call Mode vs Standard Text Mode, Voice-to-Text microphone input, Resume/JD Skill Extractor, Weak-Topic Drills, or Markdown/JSON report exports.
+    {ctx_block}
+
+    User Question: {cleaned_q}
+
+    Keep your answer focused, structured with short bullet points where helpful, and under 180 words.
+    """
+    ai_reply = _call_gemini_text(prompt)
+    if ai_reply:
+        return {"reply": ai_reply, "mode": "gemini"}
+
+    lower = cleaned_q.lower()
+    if any(w in lower for w in ("voice", "mic", "microphone", "speak", "audio", "sound")):
+        reply = (
+            "• **Interviewer Voice:** In **Live Video Call Mode**, clicking any interviewer card automatically speaks their greeting. Use **Voice On / Muted** or **System Voice Accent Override** in the call panel if your browser defaults to a muted output.\n"
+            "• **Your Microphone:** Click **🎙️ Speak Answer** (works best in Chrome, Safari, or Edge with mic permission allowed) to dictate answers live into the text box."
+        )
+    elif any(w in lower for w in ("video", "normal", "mode", "camera")):
+        reply = (
+            "• **🎥 Live AI Video Call Mode:** Features a real-time animated male or female interviewer with automatic voice narration, lip-sync, and optional self-camera PiP.\n"
+            "• **📝 Standard Normal Mode:** Runs a quiet, text-focused mock interview without video or voice—ideal for libraries, hostels, or fast written practice."
+        )
+    elif any(w in lower for w in ("score", "rubric", "grade", "readiness", "export")):
+        reply = (
+            "• **0–10 Scoring Rubric:** Answers are graded on technical accuracy, depth, edge cases, and trade-offs. Topics scoring **7.0+** become Strong Topics; anything below **7.0** goes into your Weak-Topic Drill.\n"
+            "• **Exports:** On the Readiness Report screen, download your full transcript as **Markdown (.md)**, **JSON**, or **PDF**."
+        )
+    elif any(w in lower for w in ("star", "behavioral", "leadership", "manager")):
+        reply = (
+            "Use the **STAR + Metrics** structure for senior & behavioral rounds:\n"
+            "• **Situation & Task:** 1–2 sentences setting scale, SLA, or business constraint.\n"
+            "• **Action:** Specific architectural trade-offs you drove and how you aligned stakeholders.\n"
+            "• **Result:** Quantified impact (e.g., latency reduced by 45%, zero downtime, or incident MTTR cut)."
+        )
+    else:
+        reply = (
+            "To give a high-scoring technical answer in HireReady:\n"
+            "1. **Clarify & State Core Principle:** Define the concept or architecture directly in your first 2 sentences.\n"
+            "2. **Quantify Trade-offs:** Mention time/space complexity, latency, consistency, or write vs. read overhead.\n"
+            "3. **Cover Edge Cases:** Explain failure handling, scaling bottlenecks, or security guardrails."
+        )
+    return {"reply": reply, "mode": "fallback"}
 
 
 def _is_senior_level(level: str) -> bool:

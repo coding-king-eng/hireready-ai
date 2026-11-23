@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HireReady 🧠 — Live AI Video Interview Coach</title>
+    <title>HireReady 🧠 — Live AI Video & Standard Interview Coach</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,7 +11,7 @@
           min-height: 100vh;
         }
         .glass {
-          background: rgba(15, 23, 42, 0.75);
+          background: rgba(15, 23, 42, 0.78);
           backdrop-filter: blur(14px);
           border: 1px solid rgba(148, 163, 184, 0.16);
         }
@@ -49,19 +49,22 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-lg font-bold tracking-tight text-white group-hover:text-indigo-400 transition">HireReady</h1>
-                    <span class="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v2.0 Live</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v2.1</span>
                 </div>
-                <p class="text-[11px] text-slate-400 -mt-0.5">Live AI Video Interview Simulator</p>
+                <p class="text-[11px] text-slate-400 -mt-0.5">Live AI Video & Standard Interview Coach</p>
             </div>
         </button>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5 sm:gap-3">
         <span id="aiModeBadge" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
           Checking AI...
         </span>
+            <button onclick="toggleAssistantDrawer()" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 transition">
+                💬 AI Help
+            </button>
             <button onclick="showView('setup')" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
                 + New Mock
             </button>
-            <a href="/docs" target="_blank" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-indigo-400 text-slate-300 hover:text-white transition">
+            <a href="/docs" target="_blank" class="hidden md:inline-block text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-indigo-400 text-slate-300 hover:text-white transition">
                 API Docs
             </a>
         </div>
@@ -72,7 +75,7 @@
     <!-- Error Banner -->
     <div id="errorBanner" class="hidden mb-6 p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-sm"></div>
 
-    <!-- VIEW 1: SETUP, INTERVIEWER PANEL, ANALYTICS & SESSION HISTORY -->
+    <!-- VIEW 1: SETUP, MODE SELECTOR, INTERVIEWER PANEL, ANALYTICS & HISTORY -->
     <section id="setupView" class="space-y-6">
         <!-- Analytics KPI Strip -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -107,7 +110,7 @@
             <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
                 <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-              🎥 Live AI Video Panel • Men & Women Voices
+              ⚡ Live Video Call or Standard Text Mode
             </span>
                     <div class="flex flex-wrap items-center gap-2">
                         <button
@@ -155,22 +158,54 @@
                 </div>
 
                 <div>
-                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-1.5">Choose your live AI interviewer.</h2>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-1.5">Start your technical mock round.</h2>
                     <p class="text-slate-400 text-sm">
-                        Select a male or female interviewer persona with realistic spoken voice, pick your role & seniority up to Staff/Principal, and start a face-to-face mock round.
+                        Choose between a realistic **Live Video Call** (with spoken AI interviewer & lip-sync) or a quiet **Standard Interview** round.
                     </p>
                 </div>
 
-                <!-- Interviewer Persona Selector Grid (Women & Men) -->
-                <div class="space-y-2.5">
+                <!-- STEP 1: SEPARATE INTERVIEW MODE SELECTOR -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">1. Choose Interview Experience Mode</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                                id="modeCardVideo"
+                                type="button"
+                                onclick="setInterviewMode('video')"
+                                class="text-left p-4 rounded-xl border-2 border-indigo-400 bg-indigo-600/20 shadow-lg shadow-indigo-500/10 transition space-y-1"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-white">🎥 Live AI Video Call</span>
+                                <span id="modeVideoBadge" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500 text-white">Selected</span>
+                            </div>
+                            <p class="text-xs text-slate-300">Face-to-face call with realistic human interviewer, auto-spoken questions, lip-sync & voice reply.</p>
+                        </button>
+
+                        <button
+                                id="modeCardNormal"
+                                type="button"
+                                onclick="setInterviewMode('normal')"
+                                class="text-left p-4 rounded-xl border-2 border-slate-800 bg-slate-900/80 hover:border-slate-700 transition space-y-1"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-white">📝 Standard Normal Interview</span>
+                                <span id="modeNormalBadge" class="hidden text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">Selected</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Clean, silent text-only workspace with timer & 0–10 rubric grading—ideal for quiet study.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: INTERVIEWER PERSONA SELECTOR (AUTO-SPEAKS ON CLICK!) -->
+                <div id="interviewerPickerSection" class="space-y-2.5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <label class="text-xs font-bold uppercase tracking-wider text-slate-300">🎙️ Select Interviewer (Women & Men)</label>
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-300">2. Select Interviewer — Voice Plays Automatically on Click</label>
                         <button
                                 type="button"
-                                onclick="previewSelectedVoice()"
-                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
+                                onclick="stopInterviewerSpeech()"
+                                class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
                         >
-                            🔊 Test Interviewer Voice
+                            ⏹️ Stop Voice
                         </button>
                     </div>
                     <div id="interviewerGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -225,7 +260,7 @@
                     </div>
 
                     <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
-                        <span>Join Live Video Interview Room</span>
+                        <span id="startBtnLabel">Join Live Video Call with Aanya Sharma</span>
                         <span>→</span>
                     </button>
                 </form>
@@ -237,14 +272,14 @@
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
                     <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
                 </div>
-                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[540px] pr-1 text-sm text-slate-400">
+                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[580px] pr-1 text-sm text-slate-400">
                     Loading sessions...
                 </div>
             </aside>
         </div>
     </section>
 
-    <!-- VIEW 2: LIVE VIDEO INTERVIEW ROOM -->
+    <!-- VIEW 2: INTERVIEW ARENA (ADAPTS AUTOMATICALLY TO VIDEO CALL MODE VS STANDARD NORMAL MODE) -->
     <section id="interviewView" class="hidden space-y-6">
         <!-- Top Progress Bar & Question Navigator -->
         <div class="glass rounded-2xl p-4 sm:p-5 space-y-3">
@@ -271,17 +306,17 @@
             <div id="questionPills" class="flex flex-wrap items-center gap-2 pt-1"></div>
         </div>
 
-        <!-- 2-Column Live Interview Stage: Left = Realistic AI Video Feed, Right = Question & Response -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <!-- LEFT: LIVE AI HUMAN INTERVIEWER VIDEO STAGE -->
-            <aside class="lg:col-span-5 glass rounded-2xl p-5 shadow-2xl space-y-4 lg:sticky lg:top-20">
+        <!-- Dynamic Layout Grid -->
+        <div id="interviewLayoutGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- LEFT: LIVE AI VIDEO CALL STAGE (ONLY SHOWN IN VIDEO CALL MODE) -->
+            <aside id="videoStageColumn" class="lg:col-span-5 glass rounded-2xl p-5 shadow-2xl space-y-4 lg:sticky lg:top-20">
                 <!-- Video Call Frame -->
                 <div id="videoStageCard" class="relative rounded-2xl overflow-hidden border-2 border-slate-700/80 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 transition-all duration-300">
                     <!-- Top Call Overlay -->
                     <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-950/80 text-emerald-300 border border-emerald-500/30">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                LIVE CALL
+                LIVE VIDEO CALL
               </span>
                         <div id="voiceEqBars" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-950/80 border border-slate-800">
                             <span class="eq-bar"></span>
@@ -294,6 +329,11 @@
 
                     <!-- Animated Realistic Human Portrait Container -->
                     <div id="liveAvatarStage" class="w-full h-64 sm:h-72 flex items-end justify-center pt-8 overflow-hidden"></div>
+
+                    <!-- Optional Self-View Webcam PiP -->
+                    <div id="userCamPip" class="hidden absolute bottom-16 right-3 z-10 w-24 h-20 rounded-xl overflow-hidden border border-slate-600 bg-slate-950 shadow-lg">
+                        <video id="userWebcamVideo" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1]"></video>
+                    </div>
 
                     <!-- Bottom Nameplate -->
                     <div class="bg-slate-950/90 border-t border-slate-800/90 px-4 py-3 flex items-center justify-between gap-2">
@@ -308,27 +348,36 @@
                 </div>
 
                 <!-- Voice & Call Controls -->
-                <div class="grid grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-3 gap-2">
                     <button
                             type="button"
                             onclick="speakCurrentQuestion()"
-                            class="py-2.5 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                            class="py-2.5 px-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs font-semibold transition flex items-center justify-center gap-1"
                     >
                         <span>🔁</span>
-                        <span>Replay Question</span>
+                        <span>Replay</span>
                     </button>
                     <button
                             id="muteToggleBtn"
                             type="button"
                             onclick="toggleMuteInterviewer()"
-                            class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                            class="py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1"
                     >
                         <span id="muteIcon">🔊</span>
                         <span id="muteLabel">Voice On</span>
                     </button>
+                    <button
+                            id="camToggleBtn"
+                            type="button"
+                            onclick="toggleUserWebcam()"
+                            class="py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1"
+                    >
+                        <span>📹</span>
+                        <span id="camLabel">My Cam</span>
+                    </button>
                 </div>
 
-                <!-- Optional OS Voice Selector -->
+                <!-- System Voice Accent Selector -->
                 <div class="pt-1">
                     <label for="osVoiceSelect" class="block text-[11px] uppercase tracking-wider text-slate-400 mb-1">System Voice Accent Override</label>
                     <select
@@ -341,8 +390,8 @@
                 </div>
             </aside>
 
-            <!-- RIGHT: QUESTION CARD, VOICE/TEXT INPUT & INSTANT RUBRIC FEEDBACK -->
-            <div class="lg:col-span-7 space-y-6">
+            <!-- RIGHT: QUESTION CARD, RESPONSE & INSTANT RUBRIC FEEDBACK -->
+            <div id="questionColumn" class="lg:col-span-7 space-y-6">
                 <!-- Question Card -->
                 <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
                     <div class="flex items-center justify-between gap-2">
@@ -356,7 +405,7 @@
 
                     <div>
                         <div class="flex items-center justify-between mb-2 gap-2">
-                            <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Spoken / Written Response</label>
+                            <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Answer</label>
                             <div class="flex items-center gap-3">
                                 <button
                                         id="micBtn"
@@ -373,7 +422,7 @@
                         <textarea
                                 id="answerInput"
                                 rows="6"
-                                placeholder="Click 'Speak Answer' to talk live to your interviewer or type your structured response here..."
+                                placeholder="Explain your technical approach clearly—mention trade-offs, edge cases, or complexity..."
                                 class="w-full rounded-xl bg-slate-950/80 border border-slate-700 p-4 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
                         ></textarea>
                     </div>
@@ -420,6 +469,7 @@
                         <div class="flex items-center justify-between gap-2">
                             <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">🎤 Live Follow-Up Probe</h5>
                             <button
+                                    id="hearFollowUpBtn"
                                     type="button"
                                     onclick="speakFollowUpQuestion()"
                                     class="text-[11px] px-2.5 py-0.5 rounded-md bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-200 transition"
@@ -548,10 +598,73 @@
     </section>
 </main>
 
+<!-- FLOATING AI HELP & INTERVIEW COACH ASSISTANT -->
+<div class="fixed bottom-5 right-5 z-40">
+    <!-- Chat Drawer -->
+    <div id="assistantDrawer" class="hidden mb-3 w-80 sm:w-96 glass rounded-2xl shadow-2xl border border-indigo-500/40 overflow-hidden flex flex-col">
+        <div class="px-4 py-3 bg-indigo-600/25 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-lg">🤖</span>
+                <div>
+                    <p class="text-xs font-bold text-white">HireReady AI Assistant</p>
+                    <p class="text-[10px] text-indigo-300">Ask technical doubts, STAR tips & app help</p>
+                </div>
+            </div>
+            <button type="button" onclick="toggleAssistantDrawer()" class="text-slate-400 hover:text-white text-sm px-1.5">×</button>
+        </div>
+
+        <div id="assistantMessages" class="p-3.5 space-y-3 max-h-72 overflow-y-auto text-xs sm:text-sm">
+            <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-200">
+                Hi! I'm your **HireReady AI Assistant**. Ask me about any coding/system design concept, STAR behavioral framing, or how to use Video Call vs. Standard Interview mode.
+            </div>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="px-3.5 pb-2 flex flex-wrap gap-1.5">
+            <button type="button" onclick="sendQuickAssistantPrompt('How does the 0-10 scoring rubric work?')" class="text-[10px] px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                Scoring rubric?
+            </button>
+            <button type="button" onclick="sendQuickAssistantPrompt('How do I structure STAR answers for senior interviews?')" class="text-[10px] px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                STAR method
+            </button>
+            <button type="button" onclick="sendQuickAssistantPrompt('Video Call mode vs Standard mode difference?')" class="text-[10px] px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                Video vs Standard
+            </button>
+        </div>
+
+        <form id="assistantForm" class="p-3 border-t border-slate-800 flex items-center gap-2 bg-slate-950/70">
+            <input
+                    id="assistantInput"
+                    type="text"
+                    maxlength="1000"
+                    placeholder="Ask any question or issue..."
+                    class="flex-1 rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+            <button
+                    id="assistantSendBtn"
+                    type="submit"
+                    class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs text-white transition"
+            >
+                Ask
+            </button>
+        </form>
+    </div>
+
+    <!-- Floating Toggle Button -->
+    <button
+            type="button"
+            onclick="toggleAssistantDrawer()"
+            class="ml-auto flex items-center gap-2 px-4 py-3 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-xl shadow-indigo-600/30 transition"
+    >
+        <span>💬</span>
+        <span>AI Assistant</span>
+    </button>
+</div>
+
 <!-- Footer -->
 <footer class="border-t border-slate-800/70 bg-slate-950/50 mt-12">
     <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-        <p>🧠 <span class="font-semibold text-slate-300">HireReady v2.0</span> — Live AI Video Mock Interview Platform</p>
+        <p>🧠 <span class="font-semibold text-slate-300">HireReady v2.1</span> — Live AI Video & Standard Interview Platform</p>
         <div class="flex items-center gap-4">
             <a href="https://github.com/coding-king-eng/hireready-ai" target="_blank" class="hover:text-indigo-400 transition">GitHub Source</a>
             <a href="/docs" target="_blank" class="hover:text-indigo-400 transition">OpenAPI Swagger</a>
@@ -672,13 +785,14 @@
       },
     ];
 
+    let interviewMode = "video"; // "video" | "normal"
     let selectedInterviewer = INTERVIEWER_CATALOG[0];
     let availableVoices = [];
     let selectedVoiceOverride = "auto";
     let isMuted = false;
-    let isInterviewerSpeaking = false;
     let mouthTimer = null;
     let blinkTimer = null;
+    let webcamStream = null;
 
     let currentSession = null;
     let lastSummaryData = null;
@@ -705,6 +819,39 @@
       }
       el.textContent = msg;
       el.classList.remove("hidden");
+    }
+
+    function setInterviewMode(mode) {
+      interviewMode = mode === "normal" ? "normal" : "video";
+      const videoCard = document.getElementById("modeCardVideo");
+      const normalCard = document.getElementById("modeCardNormal");
+      const videoBadge = document.getElementById("modeVideoBadge");
+      const normalBadge = document.getElementById("modeNormalBadge");
+      const pickerSection = document.getElementById("interviewerPickerSection");
+
+      if (interviewMode === "video") {
+        videoCard.className = "text-left p-4 rounded-xl border-2 border-indigo-400 bg-indigo-600/20 shadow-lg shadow-indigo-500/10 transition space-y-1";
+        normalCard.className = "text-left p-4 rounded-xl border-2 border-slate-800 bg-slate-900/80 hover:border-slate-700 transition space-y-1";
+        videoBadge.classList.remove("hidden");
+        normalBadge.classList.add("hidden");
+        pickerSection.classList.remove("hidden");
+      } else {
+        stopInterviewerSpeech();
+        normalCard.className = "text-left p-4 rounded-xl border-2 border-emerald-400 bg-emerald-500/15 shadow-lg shadow-emerald-500/10 transition space-y-1";
+        videoCard.className = "text-left p-4 rounded-xl border-2 border-slate-800 bg-slate-900/80 hover:border-slate-700 transition space-y-1";
+        normalBadge.classList.remove("hidden");
+        videoBadge.classList.add("hidden");
+        pickerSection.classList.add("hidden");
+      }
+      updateStartButtonLabel();
+    }
+
+    function updateStartButtonLabel() {
+      const label = document.getElementById("startBtnLabel");
+      if (!label) return;
+      label.textContent = interviewMode === "video"
+        ? `Join Live Video Call with ${selectedInterviewer.name}`
+        : "Start Standard Mock Interview";
     }
 
     function buildHumanAvatarSVG(persona, large = false) {
@@ -755,37 +902,30 @@
             </linearGradient>
           </defs>
           <rect width="220" height="220" fill="url(#bg-${uid})" />
-          <!-- Subtle studio bokeh -->
           <circle cx="36" cy="46" r="18" fill="#818cf8" opacity="0.12" />
           <circle cx="186" cy="64" r="24" fill="#38bdf8" opacity="0.10" />
 
           ${hairBack}
 
-          <!-- Shoulders & Blazer -->
           <path d="M32,220 C38,176 72,164 110,164 C148,164 182,176 188,220 Z" fill="${persona.blazer}" />
           <path d="M84,166 L110,214 L136,166 Z" fill="${persona.shirt}" />
           <path d="M82,165 L98,218 L76,218 Z" fill="#0f172a" opacity="0.35" />
           <path d="M138,165 L122,218 L144,218 Z" fill="#0f172a" opacity="0.35" />
 
-          <!-- Neck -->
           <rect x="94" y="138" width="32" height="34" rx="12" fill="url(#skin-${uid})" />
           <path d="M94,144 Q110,154 126,144 L126,154 Q110,162 94,154 Z" fill="#000" opacity="0.12" />
 
-          <!-- Ears -->
           <ellipse cx="64" cy="110" rx="6" ry="11" fill="${persona.skinShadow}" />
           <ellipse cx="156" cy="110" rx="6" ry="11" fill="${persona.skinShadow}" />
           ${earringsSvg}
 
-          <!-- Head / Face -->
           <path d="M66,94 C66,58 154,58 154,94 C154,132 134,152 110,152 C86,152 66,132 66,94 Z" fill="url(#skin-${uid})" />
 
           ${hairFront}
 
-          <!-- Eyebrows -->
           <path d="M78,92 Q90,87 101,91" stroke="${persona.hair}" stroke-width="3.2" stroke-linecap="round" fill="none" />
           <path d="M119,91 Q130,87 142,92" stroke="${persona.hair}" stroke-width="3.2" stroke-linecap="round" fill="none" />
 
-          <!-- Eyes -->
           <g class="avatar-eyes">
             <ellipse cx="90" cy="104" rx="7.5" ry="5" fill="#ffffff" />
             <circle cx="90" cy="104" r="3.4" fill="#1e1b18" />
@@ -795,7 +935,6 @@
             <circle cx="130" cy="104" r="3.4" fill="#1e1b18" />
             <circle cx="131.2" cy="102.8" r="1.1" fill="#ffffff" />
           </g>
-          <!-- Blinking Eyelids -->
           <g class="avatar-eyelids" opacity="0">
             <ellipse cx="90" cy="104" rx="8" ry="5.5" fill="${persona.skin}" />
             <ellipse cx="130" cy="104" rx="8" ry="5.5" fill="${persona.skin}" />
@@ -803,10 +942,8 @@
 
           ${glassesSvg}
 
-          <!-- Nose -->
           <path d="M110,104 L107,119 Q110,122 114,119" stroke="${persona.skinShadow}" stroke-width="2.2" stroke-linecap="round" fill="none" />
 
-          <!-- Animated Mouth (Lips + Open Vowel Shape) -->
           <g class="avatar-mouth-closed">
             <path d="M97,132 Q110,138 123,132" stroke="${isWoman ? "#9f1239" : "#7c2d12"}" stroke-width="3" stroke-linecap="round" fill="none" />
           </g>
@@ -825,7 +962,7 @@
         return `
           <button
             type="button"
-            onclick="selectInterviewer('${p.id}')"
+            onclick="selectInterviewer('${p.id}', true)"
             class="text-left p-3 rounded-xl border transition flex items-center gap-3 ${
               isSelected
                 ? "bg-indigo-600/20 border-indigo-400 shadow-lg shadow-indigo-500/10"
@@ -841,19 +978,24 @@
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 capitalize">${p.gender}</span>
               </div>
               <p class="text-[11px] text-indigo-300 truncate mt-0.5">${escapeHtml(p.title)}</p>
-              <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(p.style)}</p>
+              <p class="text-[10px] text-slate-400 truncate mt-0.5">${isSelected ? "🔊 Active Voice" : escapeHtml(p.style)}</p>
             </div>
           </button>
         `;
       }).join("");
     }
 
-    function selectInterviewer(id) {
+    function selectInterviewer(id, autoSpeak = true) {
       const found = INTERVIEWER_CATALOG.find(p => p.id === id);
       if (!found) return;
       selectedInterviewer = found;
       renderInterviewerSelector();
       updateLiveStagePersona();
+      updateStartButtonLabel();
+      if (autoSpeak && interviewMode === "video") {
+        isMuted = false;
+        previewSelectedVoice();
+      }
     }
 
     function updateLiveStagePersona() {
@@ -879,6 +1021,7 @@
 
     function handleVoiceOverrideChange() {
       selectedVoiceOverride = document.getElementById("osVoiceSelect").value;
+      previewSelectedVoice();
     }
 
     function resolveVoiceForPersona(persona) {
@@ -905,10 +1048,10 @@
     }
 
     function setSpeakingVisualState(active) {
-      isInterviewerSpeaking = active;
       const eq = document.getElementById("voiceEqBars");
       const tag = document.getElementById("speakingStatusTag");
       const card = document.getElementById("videoStageCard");
+      if (!eq || !tag || !card) return;
 
       if (active) {
         eq.classList.add("speaking");
@@ -958,7 +1101,7 @@
     }
 
     function speakAsInterviewer(text) {
-      if (isMuted || !text || !("speechSynthesis" in window)) return;
+      if (interviewMode !== "video" || isMuted || !text || !("speechSynthesis" in window)) return;
       stopInterviewerSpeech();
 
       const cleanText = text.replace(/[`*_#]/g, "").trim();
@@ -985,7 +1128,7 @@
     }
 
     function previewSelectedVoice() {
-      const greeting = `Hi, I'm ${selectedInterviewer.name}, ${selectedInterviewer.title}. I'll be conducting your technical interview today. Let's dive in!`;
+      const greeting = `Hi, I'm ${selectedInterviewer.name}, ${selectedInterviewer.title}. I'll be conducting your interview today.`;
       speakAsInterviewer(greeting);
     }
 
@@ -1004,8 +1147,48 @@
       }
     }
 
+    async function toggleUserWebcam() {
+      const pip = document.getElementById("userCamPip");
+      const video = document.getElementById("userWebcamVideo");
+      const label = document.getElementById("camLabel");
+
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+        video.srcObject = null;
+        pip.classList.add("hidden");
+        label.textContent = "My Cam";
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showError("Camera preview is not supported in this browser.");
+        return;
+      }
+
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = webcamStream;
+        pip.classList.remove("hidden");
+        label.textContent = "Cam On";
+      } catch (_) {
+        showError("Camera permission was blocked or no webcam was detected.");
+      }
+    }
+
+    function stopUserWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+      }
+      const pip = document.getElementById("userCamPip");
+      const label = document.getElementById("camLabel");
+      if (pip) pip.classList.add("hidden");
+      if (label) label.textContent = "My Cam";
+    }
+
     function speakCurrentQuestion() {
-      if (!currentSession || !currentSession.turns[currentTurnIndex]) return;
+      if (interviewMode !== "video" || !currentSession || !currentSession.turns[currentTurnIndex]) return;
       const turn = currentSession.turns[currentTurnIndex];
       const intro = currentTurnIndex === 0
         ? `Welcome! Let's start with question 1 on ${turn.topic_tag}. ${turn.question_text}`
@@ -1029,6 +1212,83 @@
         setTimeout(() => lids.setAttribute("opacity", "0"), 130);
       }, 3800);
     }
+
+    function applyInterviewArenaLayout() {
+      const videoCol = document.getElementById("videoStageColumn");
+      const questionCol = document.getElementById("questionColumn");
+      const hearFollowUpBtn = document.getElementById("hearFollowUpBtn");
+
+      if (interviewMode === "video") {
+        videoCol.classList.remove("hidden");
+        questionCol.className = "lg:col-span-7 space-y-6";
+        if (hearFollowUpBtn) hearFollowUpBtn.classList.remove("hidden");
+      } else {
+        videoCol.classList.add("hidden");
+        questionCol.className = "lg:col-span-12 max-w-3xl mx-auto w-full space-y-6";
+        if (hearFollowUpBtn) hearFollowUpBtn.classList.add("hidden");
+      }
+    }
+
+    // FLOATING AI ASSISTANT LOGIC
+    function toggleAssistantDrawer() {
+      const drawer = document.getElementById("assistantDrawer");
+      drawer.classList.toggle("hidden");
+      if (!drawer.classList.contains("hidden")) {
+        document.getElementById("assistantInput").focus();
+      }
+    }
+
+    function appendAssistantBubble(sender, text) {
+      const container = document.getElementById("assistantMessages");
+      const div = document.createElement("div");
+      if (sender === "user") {
+        div.className = "ml-8 p-3 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-white whitespace-pre-line";
+        div.textContent = text;
+      } else {
+        div.className = "mr-4 p-3 rounded-xl bg-slate-900/95 border border-slate-800 text-slate-200 whitespace-pre-line leading-relaxed";
+        div.textContent = text;
+      }
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendQuickAssistantPrompt(promptText) {
+      document.getElementById("assistantInput").value = promptText;
+      document.getElementById("assistantForm").dispatchEvent(new Event("submit"));
+    }
+
+    document.getElementById("assistantForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("assistantInput");
+      const btn = document.getElementById("assistantSendBtn");
+      const q = input.value.trim();
+      if (!q) return;
+
+      appendAssistantBubble("user", q);
+      input.value = "";
+      btn.disabled = true;
+      btn.textContent = "...";
+
+      const screenContext = currentSession
+        ? `Mode: ${interviewMode}, Role: ${currentSession.role}, Level: ${currentSession.level}`
+        : `Setup Screen (Selected Mode: ${interviewMode})`;
+
+      try {
+        const res = await fetch("/api/assistant", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q, context: screenContext }),
+        });
+        if (!res.ok) throw new Error("Assistant is temporarily unavailable.");
+        const data = await res.json();
+        appendAssistantBubble("ai", data.reply);
+      } catch (err) {
+        appendAssistantBubble("ai", "Could not reach the assistant right now. Please try again in a moment.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Ask";
+      }
+    });
 
     function toggleResumeDrawer() {
       document.getElementById("resumeDrawer").classList.toggle("hidden");
@@ -1157,6 +1417,9 @@
       stopTimer();
       stopVoiceInput();
       stopInterviewerSpeech();
+      if (viewName !== "interview") {
+        stopUserWebcam();
+      }
       document.getElementById("setupView").classList.toggle("hidden", viewName !== "setup");
       document.getElementById("interviewView").classList.toggle("hidden", viewName !== "interview");
       document.getElementById("summaryView").classList.toggle("hidden", viewName !== "summary");
@@ -1268,7 +1531,7 @@
         if (!sessions.length) {
           container.innerHTML = `
             <div class="space-y-3">
-              <p class="text-slate-500 text-xs">No mock sessions yet. Start a live interview on the left or preview a Senior sample report:</p>
+              <p class="text-slate-500 text-xs">No mock sessions yet. Start an interview on the left or preview a Senior sample report:</p>
               <button onclick="loadSampleDemo()" class="w-full py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-200 text-xs font-medium transition">
                 ✨ Preview Senior Sample Report
               </button>
@@ -1289,7 +1552,7 @@
                 <span>${escapeHtml(s.level)}</span>
                 <span>${s.status === 'completed' ? 'View Report →' : 'Resume →'}</span>
               </div>
-              <p class="text-[10px] text-indigo-300/80 mt-1">🎙️ ${escapeHtml(s.interviewer || "Aanya Sharma")}</p>
+              <p class="text-[10px] text-indigo-300/80 mt-1">${s.interviewer === 'Standard Text Mode' ? '📝 Standard Mode' : '🎥 ' + escapeHtml(s.interviewer || 'Aanya Sharma')}</p>
             </button>
             <button
               onclick="deleteSession(${s.id}, event)"
@@ -1356,11 +1619,16 @@
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, interviewer: selectedInterviewer.name }),
+        body: JSON.stringify({
+          ...payload,
+          interviewer: selectedInterviewer.name,
+          interview_mode: interviewMode,
+        }),
       });
       if (!res.ok) throw new Error("Failed to create interview session.");
       currentSession = await res.json();
       currentTurnIndex = 0;
+      applyInterviewArenaLayout();
       updateLiveStagePersona();
       renderCurrentQuestion();
       showView("interview");
@@ -1380,7 +1648,7 @@
 
       const btn = document.getElementById("startBtn");
       btn.disabled = true;
-      btn.innerHTML = `<span>Connecting to ${escapeHtml(selectedInterviewer.name)}...</span>`;
+      document.getElementById("startBtnLabel").textContent = "Preparing Interview Room...";
 
       try {
         const focusVal = document.getElementById("focusInput").value.trim();
@@ -1394,7 +1662,7 @@
         showError(err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Join Live Video Interview Room</span><span>→</span>`;
+        updateStartButtonLabel();
       }
     });
 
@@ -1425,17 +1693,25 @@
         const res = await fetch(`/api/sessions/${sessionId}`);
         if (!res.ok) throw new Error("Could not load session.");
         currentSession = await res.json();
-        const matchedPersona = INTERVIEWER_CATALOG.find(p => p.name === currentSession.interviewer);
-        if (matchedPersona) {
-          selectedInterviewer = matchedPersona;
-          renderInterviewerSelector();
+
+        if (currentSession.interviewer === "Standard Text Mode") {
+          setInterviewMode("normal");
+        } else {
+          setInterviewMode("video");
+          const matchedPersona = INTERVIEWER_CATALOG.find(p => p.name === currentSession.interviewer);
+          if (matchedPersona) {
+            selectedInterviewer = matchedPersona;
+            renderInterviewerSelector();
+          }
         }
+
         if (currentSession.status === "completed") {
           await loadSummary(sessionId);
           return;
         }
         const nextUnanswered = currentSession.turns.findIndex(t => t.score === null);
         currentTurnIndex = nextUnanswered >= 0 ? nextUnanswered : 0;
+        applyInterviewArenaLayout();
         updateLiveStagePersona();
         renderCurrentQuestion();
         showView("interview");
@@ -1474,8 +1750,12 @@
       const turn = currentSession.turns[currentTurnIndex];
       const total = currentSession.turns.length;
 
+      const modeBadgeText = interviewMode === "video"
+        ? `🎥 Video Call • ${currentSession.interviewer || selectedInterviewer.name}`
+        : "📝 Standard Interview Mode";
+
       document.getElementById("activeRoleLabel").textContent = currentSession.role;
-      document.getElementById("activeLevelLabel").textContent = `${currentSession.level} • Interviewer: ${currentSession.interviewer || selectedInterviewer.name} • Session #${currentSession.id}`;
+      document.getElementById("activeLevelLabel").textContent = `${currentSession.level} • ${modeBadgeText} • Session #${currentSession.id}`;
       document.getElementById("progressText").textContent = `${currentTurnIndex + 1} / ${total}`;
       document.getElementById("progressBar").style.width = `${((currentTurnIndex + 1) / total) * 100}%`;
       renderQuestionPills();
@@ -1505,7 +1785,9 @@
         document.getElementById("turnStatusBadge").textContent = "Awaiting your answer";
         feedbackCard.classList.add("hidden");
         startTimer();
-        speakCurrentQuestion();
+        if (interviewMode === "video") {
+          speakCurrentQuestion();
+        }
       }
       updateWordCount();
     }
@@ -1523,7 +1805,9 @@
 
       const btn = document.getElementById("submitAnswerBtn");
       btn.disabled = true;
-      btn.textContent = `${selectedInterviewer.name} is reviewing...`;
+      btn.textContent = interviewMode === "video"
+        ? `${selectedInterviewer.name} is reviewing...`
+        : "Evaluating with AI...";
       stopTimer();
 
       try {
@@ -1541,7 +1825,7 @@
         if (recognition) document.getElementById("micBtn").classList.add("hidden");
         document.getElementById("turnStatusBadge").textContent = `Scored ${updatedTurn.score}/10`;
         renderQuestionPills();
-        renderFeedback(updatedTurn, true);
+        renderFeedback(updatedTurn, interviewMode === "video");
       } catch (err) {
         showError(err.message);
         btn.disabled = false;
@@ -1578,7 +1862,9 @@
         document.getElementById("followUpCoachNote").textContent = data.coach_note;
         document.getElementById("followUpBonusTip").textContent = `💡 Pro Tip: ${data.bonus_tip}`;
         document.getElementById("followUpResult").classList.remove("hidden");
-        speakAsInterviewer(`${data.verdict}. ${data.coach_note}`);
+        if (interviewMode === "video") {
+          speakAsInterviewer(`${data.verdict}. ${data.coach_note}`);
+        }
       } catch (err) {
         showError(err.message);
       } finally {
@@ -1616,7 +1902,7 @@
         : "Next Question →";
       document.getElementById("feedbackCard").classList.remove("hidden");
 
-      if (speakReaction) {
+      if (speakReaction && interviewMode === "video") {
         const firstStrength = (turn.strengths && turn.strengths[0]) ? turn.strengths[0] : "";
         const firstGap = (turn.gaps && turn.gaps[0]) ? turn.gaps[0] : "";
         const followText = turn.follow_up ? ` Follow-up question: ${turn.follow_up}` : "";
@@ -1631,6 +1917,7 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         stopInterviewerSpeech();
+        stopUserWebcam();
         await loadSummary(currentSession.id);
       }
     }
@@ -1650,7 +1937,7 @@
         currentSession = detail;
 
         document.getElementById("summaryMeta").textContent =
-          `${data.role} • ${data.level} • Interviewer: ${detail.interviewer || "Aanya Sharma"} • ${data.answered_count}/${data.total_questions} Answered`;
+          `${data.role} • ${data.level} • ${detail.interviewer || "Aanya Sharma"} • ${data.answered_count}/${data.total_questions} Answered`;
         document.getElementById("summaryReadiness").textContent = `${data.readiness_percent}%`;
         document.getElementById("summaryVerdict").textContent = data.verdict;
         document.getElementById("summaryAvgScore").textContent = `${data.avg_score} / 10`;
