@@ -323,3 +323,23 @@ def test_skill_extractor_and_custom_role():
     )
     assert custom_session.status_code == 201
     assert custom_session.json()["role"] == "Full Stack AI Engineer"
+
+
+def test_openapi_schema_and_all_routes_registered():
+    schema_res = client.get("/openapi.json")
+    assert schema_res.status_code == 200
+    paths = schema_res.json()["paths"]
+    expected_paths = {
+        "/health",
+        "/api/roles",
+        "/api/extract-skills",
+        "/api/sessions",
+        "/api/sessions/demo",
+        "/api/sessions/{session_id}",
+        "/api/sessions/{session_id}/answer",
+        "/api/sessions/{session_id}/followup",
+        "/api/sessions/{session_id}/summary",
+        "/api/sessions/{session_id}/export",
+        "/api/analytics",
+    }
+    assert expected_paths.issubset(set(paths.keys()))

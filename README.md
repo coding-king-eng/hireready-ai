@@ -1,33 +1,37 @@
 # 🧠 HireReady — AI Technical Interview Coach
 
-HireReady is a full-stack AI mock interview platform that generates role- and seniority-specific technical questions, grades answers against a strict `0–10` rubric using **Google Gemini**, asks interviewer follow-up probes, and produces a diagnostic readiness report with a personalized revision plan.
+**HireReady** is a full-stack AI mock interview platform built with **Python, FastAPI, SQLAlchemy, Tailwind CSS, and Google Gemini**. It generates role- and seniority-calibrated technical questions, grades spoken or typed responses against a `0–10` rubric, conducts interactive follow-up probes, and produces exportable interview readiness reports.
 
-## ✨ Core Features
-- **Role & Seniority Question Engine:** Supports Backend (Python/FastAPI), DSA/SDE-1, Frontend (React/JS), Data Analyst (SQL/Python), and Android (Kotlin) across Intern, Junior, and Mid-Level tracks.
-- **Structured AI Grading (`Gemini 2.5 Flash` + Offline Rubric Fallback):** Returns strict JSON feedback containing score (`0–10`), strengths, technical gaps, an ideal answer hint, and an interviewer follow-up probe.
-- **Live Interview Arena:** Dark glassmorphism UI with per-question timer, live word counter, `Cmd/Ctrl + Enter` quick submit, and resumeable sessions.
-- **Readiness Report & Analytics:** Aggregates strong vs. weak topics, computes interview readiness percentage, builds a revision plan, and tracks overall KPIs across sessions.
-- **Automated Test Suite:** Isolated `pytest` suite covering the full session lifecycle, validation errors, analytics, deletion, and LLM JSON extraction.
+## ✨ Key Features
+- **Resume / JD Skill Extractor & Custom Role Mode:** Paste any resume bio or job description (`POST /api/extract-skills`) to auto-match the target role and extract focus keywords—or enter any custom role track.
+- **Voice-to-Text Interview Arena:** Hands-free answer dictation via the browser **Web Speech API**, paired with per-question timers, live word counters, question jump pills, and `Cmd/Ctrl + Enter` quick submit.
+- **Structured AI Rubric Grading (`Gemini 2.5 Flash` + Deterministic Fallback):** Grades responses `0–10` in strict JSON with concrete strengths, missing edge cases/concepts, an ideal answer hint, and an interactive **Interviewer Follow-Up Probe** (`POST /api/sessions/{id}/followup`).
+- **Diagnostic Readiness Report & Smart Retakes:** Separates strong vs. weak topics, generates a personalized revision plan, launches 1-click **Weak-Topic Drill** sessions, and exports full transcripts as **Markdown (`.md`)**, **JSON (`.json`)**, or **PDF**.
+- **Analytics & 1-Click Sample Demo:** Tracks aggregate KPIs and role mastery bars across sessions (`GET /api/analytics`) and provides a 1-click pre-graded sample report (`POST /api/sessions/demo`).
 
 ## 🛠️ Tech Stack
-- **Backend:** Python, FastAPI, SQLAlchemy, SQLite, Pydantic
-- **AI Layer:** Google GenAI SDK (`gemini-2.5-flash`) with deterministic fallback engine
-- **Frontend:** HTML5, Tailwind CSS, Vanilla JavaScript
-- **Testing & Deployment:** Pytest, HTTPX, Render
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy, SQLite, Pydantic v2
+- **AI Engine:** Google GenAI SDK (`gemini-2.5-flash`) with deterministic keyword/structure fallback
+- **Frontend:** HTML5, Tailwind CSS, Vanilla JavaScript, Web Speech API
+- **Testing & Cloud Deployment:** Pytest, HTTPX, Render (`render.yaml` auto-deploy)
 
-## 📡 API Endpoints
+## 📡 API Reference
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/` | Serves the HireReady web application |
-| `GET` | `/health` | Service health + active AI engine status (`gemini` / `fallback`) |
-| `GET` | `/api/roles` | Lists supported engineering roles and seniority levels |
+| `GET` | `/health` | Service health & active AI engine mode (`gemini` / `fallback`) |
+| `GET` | `/api/roles` | Lists built-in engineering roles and seniority levels |
+| `POST` | `/api/extract-skills` | Extracts technical skills & matches target role from resume/JD text |
 | `POST` | `/api/sessions` | Starts a new mock interview session with generated questions |
+| `POST` | `/api/sessions/demo` | Creates a pre-graded sample mock session for instant report preview |
 | `GET` | `/api/sessions` | Lists recent mock interview sessions |
-| `GET` | `/api/sessions/{id}` | Fetches full session state and turns |
+| `GET` | `/api/sessions/{id}` | Fetches full session state and question turns |
 | `POST` | `/api/sessions/{id}/answer` | Grades a candidate's answer and returns rubric feedback + follow-up |
-| `GET` | `/api/sessions/{id}/summary` | Generates the diagnostic readiness report and revision plan |
+| `POST` | `/api/sessions/{id}/followup` | Evaluates the candidate's response to the follow-up probe |
+| `GET` | `/api/sessions/{id}/summary` | Computes readiness percentage, verdict, weak topics & revision plan |
+| `GET` | `/api/sessions/{id}/export` | Downloads full report & transcript (`?format=markdown` or `?format=json`) |
 | `DELETE` | `/api/sessions/{id}` | Deletes a session and its turns |
-| `GET` | `/api/analytics` | Returns aggregate KPIs (total mocks, graded questions, avg & best score) |
+| `GET` | `/api/analytics` | Returns aggregate KPIs and per-role mastery breakdown |
 
 ## 🚀 Run Locally
 ```bash
