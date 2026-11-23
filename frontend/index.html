@@ -83,24 +83,71 @@
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
               ⚡ Structured 0–10 AI Rubric + Voice Mode
             </span>
-                    <button
-                            id="demoBtn"
-                            type="button"
-                            onclick="loadSampleDemo()"
-                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/30 transition"
-                    >
-                        ✨ Load Sample Demo Report
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button
+                                type="button"
+                                onclick="toggleResumeDrawer()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-200 border border-indigo-500/30 transition"
+                        >
+                            📄 Auto-Fill from Resume / JD
+                        </button>
+                        <button
+                                id="demoBtn"
+                                type="button"
+                                onclick="loadSampleDemo()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/30 transition"
+                        >
+                            ✨ Sample Report
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Collapsible Resume / Job Description Skill Extractor -->
+                <div id="resumeDrawer" class="hidden mb-6 p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-bold uppercase tracking-wider text-indigo-300">📄 Paste Resume Bio or Job Description</p>
+                        <button type="button" onclick="toggleResumeDrawer()" class="text-xs text-slate-400 hover:text-white">Close ×</button>
+                    </div>
+                    <textarea
+                            id="jdInput"
+                            rows="3"
+                            maxlength="4000"
+                            placeholder="Paste your skills, project summary, or a job posting (e.g., 'Backend Intern: Python, FastAPI, PostgreSQL, Redis, Docker, REST APIs')..."
+                            class="w-full rounded-lg bg-slate-950/90 border border-slate-700 p-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    ></textarea>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div id="extractedSkillsWrap" class="flex flex-wrap gap-1.5"></div>
+                        <button
+                                id="extractSkillsBtn"
+                                type="button"
+                                onclick="extractSkillsFromJD()"
+                                class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs text-white transition"
+                        >
+                            Extract Skills & Match Role
+                        </button>
+                    </div>
+                </div>
+
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
                 <p class="text-slate-400 text-sm sm:text-base mb-6">
-                    Pick your target role, seniority level, and optional focus topics. Type or speak your answers to get instant rubric feedback.
+                    Pick your target role (or enter a custom track), seniority level, and focus topics. Type or speak your answers for instant AI grading.
                 </p>
 
                 <form id="startForm" class="space-y-5">
                     <div>
                         <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role</label>
-                        <select id="roleSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                        <select
+                                id="roleSelect"
+                                onchange="handleRoleChange()"
+                                class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                        ></select>
+                        <input
+                                id="customRoleInput"
+                                type="text"
+                                maxlength="90"
+                                placeholder="Enter your custom target role (e.g., Full Stack AI Engineer, DevOps Intern)..."
+                                class="hidden mt-2.5 w-full rounded-xl bg-slate-900/90 border border-indigo-500/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400"
+                        />
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -399,6 +446,62 @@
       el.classList.remove("hidden");
     }
 
+    function toggleResumeDrawer() {
+      document.getElementById("resumeDrawer").classList.toggle("hidden");
+    }
+
+    function handleRoleChange() {
+      const select = document.getElementById("roleSelect");
+      const customInput = document.getElementById("customRoleInput");
+      if (select.value === "__custom__") {
+        customInput.classList.remove("hidden");
+        customInput.focus();
+      } else {
+        customInput.classList.add("hidden");
+      }
+    }
+
+    async function extractSkillsFromJD() {
+      showError("");
+      const rawText = document.getElementById("jdInput").value.trim();
+      if (rawText.length < 15) {
+        showError("Paste at least a short sentence describing your skills, project, or job description.");
+        return;
+      }
+
+      const btn = document.getElementById("extractSkillsBtn");
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Extracting...";
+
+      try {
+        const res = await fetch("/api/extract-skills", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ raw_text: rawText }),
+        });
+        if (!res.ok) throw new Error("Failed to extract skills.");
+        const data = await res.json();
+
+        document.getElementById("focusInput").value = data.focus_query || "";
+        const roleSelect = document.getElementById("roleSelect");
+        const matchingOption = Array.from(roleSelect.options).find(opt => opt.value === data.suggested_role);
+        if (matchingOption) {
+          roleSelect.value = data.suggested_role;
+          handleRoleChange();
+        }
+
+        document.getElementById("extractedSkillsWrap").innerHTML = (data.extracted_skills || [])
+          .map(s => `<span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${escapeHtml(s)}</span>`)
+          .join("");
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+
     function initVoiceRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) return;
@@ -521,9 +624,11 @@
       try {
         const res = await fetch("/api/roles");
         const data = await res.json();
-        document.getElementById("roleSelect").innerHTML = data.roles
+        const roleOptions = data.roles
           .map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`)
           .join("");
+        document.getElementById("roleSelect").innerHTML =
+          roleOptions + `<option value="__custom__">✍️ Custom Role (Type your own)...</option>`;
         document.getElementById("levelSelect").innerHTML = data.levels
           .map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`)
           .join("");
@@ -675,6 +780,16 @@
 
     document.getElementById("startForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      showError("");
+      const selectedRole = document.getElementById("roleSelect").value;
+      const customRole = document.getElementById("customRoleInput").value.trim();
+      const finalRole = selectedRole === "__custom__" ? customRole : selectedRole;
+
+      if (!finalRole || finalRole.length < 2) {
+        showError("Please enter a custom target role name.");
+        return;
+      }
+
       const btn = document.getElementById("startBtn");
       btn.disabled = true;
       btn.innerHTML = `<span>Generating Questions...</span>`;
@@ -682,7 +797,7 @@
       try {
         const focusVal = document.getElementById("focusInput").value.trim();
         await startNewSession({
-          role: document.getElementById("roleSelect").value,
+          role: finalRole,
           level: document.getElementById("levelSelect").value,
           question_count: Number(document.getElementById("countSelect").value),
           focus_topic: focusVal || null,

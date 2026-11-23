@@ -9,6 +9,16 @@ class SessionCreate(BaseModel):
     focus_topic: Optional[str] = Field(default=None, max_length=400)
 
 
+class SkillExtractRequest(BaseModel):
+    raw_text: str = Field(..., min_length=15, max_length=4000)
+
+
+class SkillExtractOut(BaseModel):
+    suggested_role: str
+    extracted_skills: List[str]
+    focus_query: str
+
+
 class AnswerSubmit(BaseModel):
     turn_id: int
     user_answer: str = Field(..., min_length=1, max_length=5000)

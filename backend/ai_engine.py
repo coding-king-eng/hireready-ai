@@ -149,6 +149,16 @@ FALLBACK_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
     ],
 }
 
+KNOWN_TECH_SKILLS = [
+    "Python", "FastAPI", "Django", "Flask", "SQL", "PostgreSQL", "MySQL", "SQLite",
+    "Redis", "Docker", "Kubernetes", "REST API", "GraphQL", "JWT", "Microservices",
+    "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Tailwind CSS", "HTML", "CSS",
+    "Kotlin", "Android", "Jetpack Compose", "Coroutines", "Room", "Retrofit", "MVVM",
+    "Pandas", "NumPy", "A/B Testing", "Power BI", "Tableau",
+    "Data Structures", "Algorithms", "Dynamic Programming", "Graphs", "Trees", "System Design",
+    "Git", "Linux", "AWS", "LLM", "Gemini API",
+]
+
 
 def get_engine_status() -> Dict[str, str]:
     """Reports whether live Gemini AI or deterministic fallback mode is active."""
@@ -202,6 +212,61 @@ def _call_gemini_json(prompt: str) -> Dict[str, Any] | None:
         return _extract_json(response.text or "")
     except Exception:
         return None
+
+
+def extract_skills_from_text(raw_text: str) -> Dict[str, Any]:
+    """Extracts technical skills and suggests the closest interview role from a resume or JD."""
+    cleaned = (raw_text or "").strip()
+    prompt = f"""
+    Analyze this candidate resume snippet or job description:
+    \"\"\"{cleaned}\"\"\"
+
+    Extract up to 8 key technical skills/concepts and choose the single best matching role from:
+    - Backend Developer (Python / FastAPI)
+    - DSA & Problem Solving (SDE-1)
+    - Frontend Engineer (React / JS)
+    - Data Analyst (SQL & Python)
+    - Android Developer (Kotlin)
+
+    Return ONLY valid JSON:
+    {{
+      "suggested_role": "Backend Developer (Python / FastAPI)",
+      "extracted_skills": ["Python", "FastAPI", "Redis", "SQL"]
+    }}
+    """
+    ai_res = _call_gemini_json(prompt)
+    if ai_res and isinstance(ai_res.get("extracted_skills"), list):
+        skills = [str(s).strip() for s in ai_res["extracted_skills"] if str(s).strip()][:8]
+        role = str(ai_res.get("suggested_role") or "Backend Developer (Python / FastAPI)").strip()
+        if skills:
+            return {
+                "suggested_role": role,
+                "extracted_skills": skills,
+                "focus_query": ", ".join(skills[:6]),
+            }
+
+    lower_text = cleaned.lower()
+    matched = [skill for skill in KNOWN_TECH_SKILLS if skill.lower() in lower_text][:8]
+    if not matched:
+        matched = ["System Design", "Data Structures", "REST API"]
+
+    matched_lower = {m.lower() for m in matched}
+    if matched_lower & {"kotlin", "android", "jetpack compose", "coroutines", "room", "retrofit"}:
+        suggested = "Android Developer (Kotlin)"
+    elif matched_lower & {"react", "javascript", "typescript", "next.js", "tailwind css", "css"}:
+        suggested = "Frontend Engineer (React / JS)"
+    elif matched_lower & {"pandas", "numpy", "a/b testing", "power bi", "tableau"}:
+        suggested = "Data Analyst (SQL & Python)"
+    elif matched_lower & {"dynamic programming", "graphs", "trees", "data structures", "algorithms"}:
+        suggested = "DSA & Problem Solving (SDE-1)"
+    else:
+        suggested = "Backend Developer (Python / FastAPI)"
+
+    return {
+        "suggested_role": suggested,
+        "extracted_skills": matched,
+        "focus_query": ", ".join(matched[:6]),
+    }
 
 
 def generate_questions(

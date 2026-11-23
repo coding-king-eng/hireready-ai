@@ -297,3 +297,29 @@ def test_demo_session_and_followup_evaluation():
         "/api/sessions/9999/followup",
         json={"turn_id": turn_id, "follow_up_question": "Test?", "follow_up_answer": "Sample answer"},
     ).status_code == 404
+
+
+def test_skill_extractor_and_custom_role():
+    extract_res = client.post(
+        "/api/extract-skills",
+        json={
+            "raw_text": "Built REST APIs with Python, FastAPI, PostgreSQL, Redis caching, and Docker for a cloud microservice."
+        },
+    )
+    assert extract_res.status_code == 200
+    data = extract_res.json()
+    assert data["suggested_role"] == "Backend Developer (Python / FastAPI)"
+    assert "Python" in data["extracted_skills"]
+    assert "Redis" in data["extracted_skills"]
+
+    custom_session = client.post(
+        "/api/sessions",
+        json={
+            "role": "Full Stack AI Engineer",
+            "level": "Intern",
+            "question_count": 2,
+            "focus_topic": data["focus_query"],
+        },
+    )
+    assert custom_session.status_code == 201
+    assert custom_session.json()["role"] == "Full Stack AI Engineer"

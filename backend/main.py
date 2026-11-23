@@ -7,7 +7,13 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .ai_engine import evaluate_answer, evaluate_followup, generate_questions, get_engine_status
+from .ai_engine import (
+    evaluate_answer,
+    evaluate_followup,
+    extract_skills_from_text,
+    generate_questions,
+    get_engine_status,
+)
 from .database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
@@ -132,6 +138,12 @@ def get_supported_roles():
         ],
         "levels": ["Intern", "Junior (0–2 Yrs)", "Mid-Level (2–5 Yrs)"],
     }
+
+
+@app.post("/api/extract-skills", response_model=schemas.SkillExtractOut)
+def extract_skills(payload: schemas.SkillExtractRequest):
+    result = extract_skills_from_text(payload.raw_text)
+    return schemas.SkillExtractOut(**result)
 
 
 @app.get("/api/sessions")
