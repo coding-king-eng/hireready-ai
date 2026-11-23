@@ -204,16 +204,29 @@ def _call_gemini_json(prompt: str) -> Dict[str, Any] | None:
         return None
 
 
-def generate_questions(role: str, level: str, count: int = 5) -> List[Dict[str, str]]:
+def generate_questions(
+        role: str,
+        level: str,
+        count: int = 5,
+        focus_topic: str | None = None,
+) -> List[Dict[str, str]]:
     """Generates `count` distinct, seniority-calibrated interview questions."""
+    clean_focus = (focus_topic or "").strip()
+    focus_instruction = (
+        f"- Specific Focus Areas / Job Description Keywords: {clean_focus} (prioritize these concepts)"
+        if clean_focus
+        else "- Cover a balanced mix of core topics for this role"
+    )
+
     prompt = f"""
     You are a senior staff engineer conducting a real technical interview.
     Generate {count} distinct, practical interview questions tailored to:
     - Role: {role}
     - Seniority Level: {level}
+    {focus_instruction}
 
     Rules:
-    - Cover different topics (no duplicate concepts).
+    - Cover different angles (no duplicate questions).
     - Calibrate depth to the {level} level (fundamentals + edge cases for Intern/Junior; system trade-offs for Mid-Level).
     - Return ONLY valid JSON matching this exact schema:
     {{
@@ -240,8 +253,19 @@ def generate_questions(role: str, level: str, count: int = 5) -> List[Dict[str, 
         if len(valid_qs) >= count:
             return valid_qs[:count]
 
-    pool = FALLBACK_QUESTIONS.get(role, FALLBACK_QUESTIONS["Backend Developer (Python / FastAPI)"])
-    selected = random.sample(pool, min(count, len(pool)))
+    pool = list(FALLBACK_QUESTIONS.get(role, FALLBACK_QUESTIONS["Backend Developer (Python / FastAPI)"]))
+    if clean_focus:
+        keywords = {w.lower().strip(",.;:") for w in clean_focus.split() if len(w) > 2}
+        pool.sort(
+            key=lambda q: sum(
+                1 for kw in keywords if kw in q["topic_tag"].lower() or kw in q["question_text"].lower()
+            ),
+            reverse=True,
+        )
+        selected = pool[: min(count, len(pool))]
+    else:
+        selected = random.sample(pool, min(count, len(pool)))
+
     while len(selected) < count:
         selected.append(pool[len(selected) % len(pool)])
     return selected

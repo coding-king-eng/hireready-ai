@@ -71,11 +71,11 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
           <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mb-4">
-            ⚡ Structured 0–10 AI Rubric Evaluation
+            ⚡ Structured 0–10 AI Rubric + Voice Mode
           </span>
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
                 <p class="text-slate-400 text-sm sm:text-base mb-6">
-                    Pick your target role and seniority level. Answer tailored technical questions and get instant structured feedback on strengths, missing concepts, and weak topics.
+                    Pick your target role, seniority level, and optional focus topics. Type or speak your answers to get instant rubric feedback.
                 </p>
 
                 <form id="startForm" class="space-y-5">
@@ -98,6 +98,19 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label for="focusInput" class="block text-sm font-medium text-slate-300 mb-1.5">
+                            Focus Topics / JD Keywords <span class="text-slate-500 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                                id="focusInput"
+                                type="text"
+                                maxlength="350"
+                                placeholder="e.g., JWT auth, Redis caching, SQL indexing, dynamic programming..."
+                                class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        />
+                    </div>
+
                     <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
                         <span>Start Mock Interview</span>
                         <span>→</span>
@@ -111,7 +124,7 @@
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
                     <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
                 </div>
-                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[380px] pr-1 text-sm text-slate-400">
+                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[410px] pr-1 text-sm text-slate-400">
                     Loading sessions...
                 </div>
             </aside>
@@ -152,14 +165,25 @@
             <h3 id="questionText" class="text-lg sm:text-xl font-semibold text-white leading-relaxed"></h3>
 
             <div>
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center justify-between mb-2 gap-2">
                     <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Answer</label>
-                    <span id="wordCountBadge" class="text-[11px] text-slate-400">0 words</span>
+                    <div class="flex items-center gap-3">
+                        <button
+                                id="micBtn"
+                                type="button"
+                                onclick="toggleVoiceInput()"
+                                class="hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+                        >
+                            <span id="micIcon">🎙️</span>
+                            <span id="micLabel">Speak Answer</span>
+                        </button>
+                        <span id="wordCountBadge" class="text-[11px] text-slate-400">0 words</span>
+                    </div>
                 </div>
                 <textarea
                         id="answerInput"
                         rows="6"
-                        placeholder="Explain your approach clearly—mention trade-offs, edge cases, or time/space complexity where relevant..."
+                        placeholder="Type or click 'Speak Answer' to explain your approach—mention trade-offs, edge cases, or time/space complexity..."
                         class="w-full rounded-xl bg-slate-950/80 border border-slate-700 p-4 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
                 ></textarea>
             </div>
@@ -273,6 +297,8 @@
     let currentTurnIndex = 0;
     let timerInterval = null;
     let elapsedSeconds = 0;
+    let recognition = null;
+    let isRecording = false;
 
     function escapeHtml(str) {
       return String(str ?? "")
@@ -293,9 +319,75 @@
       el.classList.remove("hidden");
     }
 
+    function initVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      const micBtn = document.getElementById("micBtn");
+      micBtn.classList.remove("hidden");
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = (event) => {
+        const answerBox = document.getElementById("answerInput");
+        let spokenChunk = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            spokenChunk += event.results[i][0].transcript + " ";
+          }
+        }
+        if (spokenChunk) {
+          const prefix = answerBox.value && !answerBox.value.endsWith(" ") ? " " : "";
+          answerBox.value += prefix + spokenChunk.trim() + " ";
+          updateWordCount();
+        }
+      };
+
+      recognition.onerror = () => {
+        stopVoiceInput();
+      };
+
+      recognition.onend = () => {
+        if (isRecording) {
+          try { recognition.start(); } catch (_) { stopVoiceInput(); }
+        }
+      };
+    }
+
+    function toggleVoiceInput() {
+      if (!recognition) return;
+      if (isRecording) {
+        stopVoiceInput();
+      } else {
+        isRecording = true;
+        const micBtn = document.getElementById("micBtn");
+        micBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse transition";
+        document.getElementById("micIcon").textContent = "⏹️";
+        document.getElementById("micLabel").textContent = "Stop Recording";
+        try { recognition.start(); } catch (_) {}
+      }
+    }
+
+    function stopVoiceInput() {
+      isRecording = false;
+      if (recognition) {
+        try { recognition.stop(); } catch (_) {}
+      }
+      const micBtn = document.getElementById("micBtn");
+      if (!micBtn.classList.contains("hidden")) {
+        micBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition";
+        document.getElementById("micIcon").textContent = "🎙️";
+        document.getElementById("micLabel").textContent = "Speak Answer";
+      }
+    }
+
     function showView(viewName) {
       showError("");
       stopTimer();
+      stopVoiceInput();
       document.getElementById("setupView").classList.toggle("hidden", viewName !== "setup");
       document.getElementById("interviewView").classList.toggle("hidden", viewName !== "interview");
       document.getElementById("summaryView").classList.toggle("hidden", viewName !== "summary");
@@ -445,10 +537,12 @@
       btn.innerHTML = `<span>Generating Questions...</span>`;
 
       try {
+        const focusVal = document.getElementById("focusInput").value.trim();
         const payload = {
           role: document.getElementById("roleSelect").value,
           level: document.getElementById("levelSelect").value,
           question_count: Number(document.getElementById("countSelect").value),
+          focus_topic: focusVal || null,
         };
         const res = await fetch("/api/sessions", {
           method: "POST",
@@ -488,6 +582,7 @@
     }
 
     function renderCurrentQuestion() {
+      stopVoiceInput();
       const turn = currentSession.turns[currentTurnIndex];
       const total = currentSession.turns.length;
 
@@ -502,11 +597,13 @@
       const answerBox = document.getElementById("answerInput");
       const submitBtn = document.getElementById("submitAnswerBtn");
       const feedbackCard = document.getElementById("feedbackCard");
+      const micBtn = document.getElementById("micBtn");
 
       if (turn.score !== null) {
         answerBox.value = turn.user_answer || "";
         answerBox.disabled = true;
         submitBtn.classList.add("hidden");
+        if (recognition) micBtn.classList.add("hidden");
         document.getElementById("turnStatusBadge").textContent = `Scored ${turn.score}/10`;
         renderFeedback(turn);
       } else {
@@ -515,6 +612,7 @@
         submitBtn.classList.remove("hidden");
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit & Evaluate Answer";
+        if (recognition) micBtn.classList.remove("hidden");
         document.getElementById("turnStatusBadge").textContent = "Awaiting your answer";
         feedbackCard.classList.add("hidden");
         startTimer();
@@ -524,10 +622,11 @@
 
     async function submitAnswer() {
       showError("");
+      stopVoiceInput();
       const turn = currentSession.turns[currentTurnIndex];
       const userAnswer = document.getElementById("answerInput").value.trim();
       if (!userAnswer) {
-        showError("Please type your answer before submitting.");
+        showError("Please type or speak your answer before submitting.");
         return;
       }
 
@@ -548,6 +647,7 @@
 
         document.getElementById("answerInput").disabled = true;
         btn.classList.add("hidden");
+        if (recognition) document.getElementById("micBtn").classList.add("hidden");
         document.getElementById("turnStatusBadge").textContent = `Scored ${updatedTurn.score}/10`;
         renderFeedback(updatedTurn);
       } catch (err) {
@@ -626,6 +726,7 @@
     }
 
     // Boot
+    initVoiceRecognition();
     loadRoles();
     loadHistory();
     loadAnalytics();

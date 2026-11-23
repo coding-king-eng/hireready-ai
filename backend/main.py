@@ -1,15 +1,14 @@
 import json
+from pathlib import Path
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .ai_engine import evaluate_answer, generate_questions
-from .database import engine, get_db
-from pathlib import Path
-from fastapi.responses import FileResponse
 from .ai_engine import evaluate_answer, generate_questions, get_engine_status
+from .database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -57,12 +56,14 @@ def _serialize_session(session: models.InterviewSession) -> schemas.SessionDetai
         turns=[_serialize_turn(t) for t in ordered_turns],
     )
 
+
 FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 
 
 @app.get("/")
 def serve_frontend():
     return FileResponse(FRONTEND_INDEX)
+
 
 @app.get("/health")
 def health_check():
@@ -73,6 +74,7 @@ def health_check():
         "ai_mode": ai_status["mode"],
         "ai_model": ai_status["model"],
     }
+
 
 @app.get("/api/roles")
 def get_supported_roles():
@@ -107,7 +109,12 @@ def list_sessions(db: Session = Depends(get_db)):
 
 @app.post("/api/sessions", response_model=schemas.SessionDetailOut, status_code=201)
 def create_interview_session(payload: schemas.SessionCreate, db: Session = Depends(get_db)):
-    questions = generate_questions(payload.role, payload.level, payload.question_count)
+    questions = generate_questions(
+        payload.role,
+        payload.level,
+        payload.question_count,
+        payload.focus_topic,
+    )
 
     session = models.InterviewSession(
         role=payload.role,
@@ -180,6 +187,7 @@ def submit_turn_answer(session_id: int, payload: schemas.AnswerSubmit, db: Sessi
 
     db.commit()
     db.refresh(turn)
+
     turn_out = _serialize_turn(turn, hide_hint_if_unanswered=False)
     turn_out.follow_up = result.get("follow_up")
     return turn_out
@@ -232,6 +240,7 @@ def get_session_summary(session_id: int, db: Session = Depends(get_db)):
         weak_topics=list(dict.fromkeys(weak_topics)),
         action_plan=action_plan,
     )
+
 
 @app.get("/api/analytics")
 def get_analytics(db: Session = Depends(get_db)):

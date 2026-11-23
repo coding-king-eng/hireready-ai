@@ -6,6 +6,7 @@ class SessionCreate(BaseModel):
     role: str = Field(..., min_length=2, max_length=100)
     level: str = Field(..., min_length=2, max_length=50)
     question_count: int = Field(default=5, ge=1, le=10)
+    focus_topic: Optional[str] = Field(default=None, max_length=400)
 
 
 class AnswerSubmit(BaseModel):

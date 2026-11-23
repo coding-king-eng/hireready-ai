@@ -162,6 +162,7 @@ def test_ai_engine_json_extractor():
 
     assert ai_engine._extract_json("not valid json at all") is None
 
+
 def test_analytics_and_delete_session():
     created = client.post(
         "/api/sessions",
@@ -187,3 +188,18 @@ def test_analytics_and_delete_session():
     assert deleted.status_code == 200
     assert deleted.json()["deleted_id"] == session_id
     assert client.get(f"/api/sessions/{session_id}").status_code == 404
+
+
+def test_custom_focus_topic_prioritization():
+    res = client.post(
+        "/api/sessions",
+        json={
+            "role": "Backend Developer (Python / FastAPI)",
+            "level": "Junior (0–2 Yrs)",
+            "question_count": 2,
+            "focus_topic": "Redis caching",
+        },
+    )
+    assert res.status_code == 201
+    data = res.json()
+    assert data["turns"][0]["topic_tag"] == "Caching & Scalability"
