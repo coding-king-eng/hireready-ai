@@ -203,3 +203,32 @@ def test_custom_focus_topic_prioritization():
     assert res.status_code == 201
     data = res.json()
     assert data["turns"][0]["topic_tag"] == "Caching & Scalability"
+
+
+def test_session_export_markdown_and_json():
+    created = client.post(
+        "/api/sessions",
+        json={"role": "Data Analyst (SQL & Python)", "level": "Intern", "question_count": 1},
+    ).json()
+    session_id = created["id"]
+    turn_id = created["turns"][0]["id"]
+
+    client.post(
+        f"/api/sessions/{session_id}/answer",
+        json={"turn_id": turn_id, "user_answer": "ROW_NUMBER assigns unique sequential IDs while DENSE_RANK keeps consecutive ranks on ties."},
+    )
+
+    md_res = client.get(f"/api/sessions/{session_id}/export?format=markdown")
+    assert md_res.status_code == 200
+    assert "text/markdown" in md_res.headers["content-type"]
+    assert f"hireready-session-{session_id}.md" in md_res.headers["content-disposition"]
+    assert "HireReady Interview Readiness Report" in md_res.text
+
+    json_res = client.get(f"/api/sessions/{session_id}/export?format=json")
+    assert json_res.status_code == 200
+    assert f"hireready-session-{session_id}.json" in json_res.headers["content-disposition"]
+    exported = json_res.json()
+    assert exported["summary"]["session_id"] == session_id
+    assert len(exported["transcript"]) == 1
+
+    assert client.get("/api/sessions/9999/export?format=markdown").status_code == 404

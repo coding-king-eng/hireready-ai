@@ -238,7 +238,7 @@
         </div>
     </section>
 
-    <!-- VIEW 3: FINAL DIAGNOSTIC SUMMARY -->
+    <!-- VIEW 3: FINAL DIAGNOSTIC SUMMARY & TRANSCRIPT REVIEW -->
     <section id="summaryView" class="hidden max-w-3xl mx-auto space-y-6">
         <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
@@ -280,14 +280,32 @@
                 <ul id="actionPlanList" class="space-y-2 text-sm text-slate-200 list-disc list-inside"></ul>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <!-- Export & Action Buttons -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
                 <button onclick="showView('setup')" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white transition">
                     Start Another Mock Interview
                 </button>
-                <button onclick="window.print()" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-medium text-sm text-slate-200 transition">
-                    Print / Save Report PDF
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a id="exportMdLink" href="#" download class="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 font-medium text-xs sm:text-sm text-emerald-200 transition">
+                        📥 Download Markdown (.md)
+                    </a>
+                    <a id="exportJsonLink" href="#" download class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium text-xs sm:text-sm text-slate-200 transition">
+                        📦 Export JSON
+                    </a>
+                    <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-medium text-xs sm:text-sm text-slate-200 transition">
+                        🖨️ Print PDF
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- Question-by-Question Transcript Breakdown -->
+        <div class="glass rounded-2xl p-6 sm:p-8 shadow-xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base sm:text-lg font-bold text-white">📋 Question-by-Question Review</h3>
+                <span class="text-xs text-slate-400">Full rubric breakdown</span>
+            </div>
+            <div id="summaryTranscriptList" class="space-y-4"></div>
         </div>
     </section>
 </main>
@@ -698,9 +716,15 @@
     async function loadSummary(sessionId) {
       showError("");
       try {
-        const res = await fetch(`/api/sessions/${sessionId}/summary`);
-        if (!res.ok) throw new Error("Could not load session summary.");
-        const data = await res.json();
+        const [summaryRes, detailRes] = await Promise.all([
+          fetch(`/api/sessions/${sessionId}/summary`),
+          fetch(`/api/sessions/${sessionId}`),
+        ]);
+        if (!summaryRes.ok || !detailRes.ok) throw new Error("Could not load session report.");
+
+        const data = await summaryRes.json();
+        const detail = await detailRes.json();
+        currentSession = detail;
 
         document.getElementById("summaryMeta").textContent =
           `${data.role} • ${data.level} • ${data.answered_count}/${data.total_questions} Answered`;
@@ -718,6 +742,34 @@
 
         document.getElementById("actionPlanList").innerHTML = data.action_plan
           .map(step => `<li>${escapeHtml(step)}</li>`).join("");
+
+        document.getElementById("exportMdLink").href = `/api/sessions/${sessionId}/export?format=markdown`;
+        document.getElementById("exportJsonLink").href = `/api/sessions/${sessionId}/export?format=json`;
+
+        const transcriptContainer = document.getElementById("summaryTranscriptList");
+        transcriptContainer.innerHTML = detail.turns.map(t => {
+          const scoreBadge = t.score !== null
+            ? `<span class="text-xs font-bold px-2.5 py-1 rounded-full ${t.score >= 7.5 ? 'bg-emerald-500/15 text-emerald-300' : t.score >= 5 ? 'bg-amber-500/15 text-amber-300' : 'bg-rose-500/15 text-rose-300'}">${Number(t.score).toFixed(1)} / 10</span>`
+            : `<span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">Unanswered</span>`;
+
+          return `
+            <div class="p-5 rounded-xl bg-slate-900/85 border border-slate-800 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-cyan-300">Q${t.question_number} • ${escapeHtml(t.topic_tag)}</span>
+                ${scoreBadge}
+              </div>
+              <p class="text-sm sm:text-base font-semibold text-white">${escapeHtml(t.question_text)}</p>
+              <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-xs sm:text-sm text-slate-300">
+                <span class="font-semibold text-slate-400">Your Answer:</span> ${escapeHtml(t.user_answer || "Not answered")}
+              </div>
+              ${t.ideal_hint ? `
+                <div class="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs sm:text-sm text-indigo-200">
+                  <span class="font-semibold text-indigo-300">Ideal Hint:</span> ${escapeHtml(t.ideal_hint)}
+                </div>
+              ` : ""}
+            </div>
+          `;
+        }).join("");
 
         showView("summary");
       } catch (err) {

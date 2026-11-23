@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 from typing import List
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -54,6 +54,50 @@ def _serialize_session(session: models.InterviewSession) -> schemas.SessionDetai
         avg_score=session.avg_score,
         status=session.status,
         turns=[_serialize_turn(t) for t in ordered_turns],
+    )
+
+
+def _build_summary_data(session: models.InterviewSession) -> schemas.SessionSummaryOut:
+    ordered_turns = sorted(session.turns, key=lambda t: t.question_number)
+    answered_turns = [t for t in ordered_turns if t.score is not None]
+    avg_score = session.avg_score
+    readiness = int(round(avg_score * 10))
+
+    if avg_score >= 8.0:
+        verdict = "Strong Hire — Interview Ready"
+    elif avg_score >= 6.0:
+        verdict = "Solid Foundation — Polish Edge Cases"
+    elif avg_score >= 4.0:
+        verdict = "Developing — Focused Topic Revision Needed"
+    else:
+        verdict = "Needs Practice — Review Core Fundamentals"
+
+    strong_topics: List[str] = [t.topic_tag for t in answered_turns if (t.score or 0) >= 7.0]
+    weak_topics: List[str] = [t.topic_tag for t in answered_turns if (t.score or 0) < 7.0]
+
+    action_plan: List[str] = []
+    for t in answered_turns:
+        if (t.score or 0) < 7.0:
+            gaps = json.loads(t.gaps_json or "[]")
+            tip = gaps[0] if gaps else f"Revise core concepts of {t.topic_tag}"
+            action_plan.append(f"[{t.topic_tag}] {tip}")
+
+    if not action_plan:
+        action_plan.append(f"Attempt a {session.role} mock session at the next seniority tier.")
+
+    return schemas.SessionSummaryOut(
+        session_id=session.id,
+        role=session.role,
+        level=session.level,
+        status=session.status,
+        total_questions=session.total_questions,
+        answered_count=len(answered_turns),
+        avg_score=avg_score,
+        readiness_percent=readiness,
+        verdict=verdict,
+        strong_topics=list(dict.fromkeys(strong_topics)),
+        weak_topics=list(dict.fromkeys(weak_topics)),
+        action_plan=action_plan,
     )
 
 
@@ -198,47 +242,73 @@ def get_session_summary(session_id: int, db: Session = Depends(get_db)):
     session = db.query(models.InterviewSession).filter(models.InterviewSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Interview session not found")
+    return _build_summary_data(session)
 
-    ordered_turns = sorted(session.turns, key=lambda t: t.question_number)
-    answered_turns = [t for t in ordered_turns if t.score is not None]
-    avg_score = session.avg_score
-    readiness = int(round(avg_score * 10))
 
-    if avg_score >= 8.0:
-        verdict = "Strong Hire — Interview Ready"
-    elif avg_score >= 6.0:
-        verdict = "Solid Foundation — Polish Edge Cases"
-    elif avg_score >= 4.0:
-        verdict = "Developing — Focused Topic Revision Needed"
-    else:
-        verdict = "Needs Practice — Review Core Fundamentals"
+@app.get("/api/sessions/{session_id}/export")
+def export_session_report(
+        session_id: int,
+        format: str = Query(default="markdown", pattern="^(markdown|json)$"),
+        db: Session = Depends(get_db),
+):
+    session = db.query(models.InterviewSession).filter(models.InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found")
 
-    strong_topics: List[str] = [t.topic_tag for t in answered_turns if (t.score or 0) >= 7.0]
-    weak_topics: List[str] = [t.topic_tag for t in answered_turns if (t.score or 0) < 7.0]
+    summary = _build_summary_data(session)
+    detail = _serialize_session(session)
 
-    action_plan: List[str] = []
-    for t in answered_turns:
-        if (t.score or 0) < 7.0:
-            gaps = json.loads(t.gaps_json or "[]")
-            tip = gaps[0] if gaps else f"Revise core concepts of {t.topic_tag}"
-            action_plan.append(f"[{t.topic_tag}] {tip}")
+    if format == "json":
+        payload = {
+            "summary": summary.model_dump(),
+            "transcript": [t.model_dump() for t in detail.turns],
+        }
+        return JSONResponse(
+            content=payload,
+            headers={"Content-Disposition": f'attachment; filename="hireready-session-{session_id}.json"'},
+        )
 
-    if not action_plan:
-        action_plan.append(f"Attempt a {session.role} mock session at the next seniority tier.")
+    lines = [
+        f"# HireReady Interview Readiness Report — Session #{session.id}",
+        "",
+        f"- **Role:** {summary.role}",
+        f"- **Level:** {summary.level}",
+        f"- **Status:** {summary.status}",
+        f"- **Average Score:** {summary.avg_score} / 10",
+        f"- **Readiness:** {summary.readiness_percent}%",
+        f"- **Verdict:** {summary.verdict}",
+        "",
+        "## Personalized Revision Plan",
+    ]
+    for item in summary.action_plan:
+        lines.append(f"- {item}")
 
-    return schemas.SessionSummaryOut(
-        session_id=session.id,
-        role=session.role,
-        level=session.level,
-        status=session.status,
-        total_questions=session.total_questions,
-        answered_count=len(answered_turns),
-        avg_score=avg_score,
-        readiness_percent=readiness,
-        verdict=verdict,
-        strong_topics=list(dict.fromkeys(strong_topics)),
-        weak_topics=list(dict.fromkeys(weak_topics)),
-        action_plan=action_plan,
+    lines.extend(["", "## Question-by-Question Transcript"])
+    for turn in detail.turns:
+        score_str = f"{turn.score}/10" if turn.score is not None else "Not answered"
+        lines.extend([
+            "",
+            f"### Q{turn.question_number}. [{turn.topic_tag}] ({score_str})",
+            f"**Question:** {turn.question_text}",
+            "",
+            f"**Your Answer:** {turn.user_answer or '_Unanswered_'}",
+            "",
+            "**Strengths:**",
+        ])
+        for s in (turn.strengths or ["N/A"]):
+            lines.append(f"- {s}")
+        lines.append("")
+        lines.append("**Gaps to Improve:**")
+        for g in (turn.gaps or ["N/A"]):
+            lines.append(f"- {g}")
+        if turn.ideal_hint:
+            lines.extend(["", f"**Ideal Answer Hint:** {turn.ideal_hint}"])
+
+    markdown_body = "\n".join(lines) + "\n"
+    return PlainTextResponse(
+        content=markdown_body,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="hireready-session-{session_id}.md"'},
     )
 
 
