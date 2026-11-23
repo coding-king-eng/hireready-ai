@@ -232,3 +232,49 @@ def get_session_summary(session_id: int, db: Session = Depends(get_db)):
         weak_topics=list(dict.fromkeys(weak_topics)),
         action_plan=action_plan,
     )
+
+@app.get("/api/analytics")
+def get_analytics(db: Session = Depends(get_db)):
+    sessions = db.query(models.InterviewSession).all()
+    answered_turns = (
+        db.query(models.InterviewTurn)
+        .filter(models.InterviewTurn.score.isnot(None))
+        .all()
+    )
+
+    total_sessions = len(sessions)
+    completed_sessions = sum(1 for s in sessions if s.status == "completed")
+    scored_sessions = [s.avg_score for s in sessions if s.avg_score and s.avg_score > 0]
+    overall_avg = round(sum(scored_sessions) / len(scored_sessions), 2) if scored_sessions else 0.0
+    best_score = round(max(scored_sessions), 2) if scored_sessions else 0.0
+
+    role_scores = {}
+    for s in sessions:
+        if s.avg_score and s.avg_score > 0:
+            role_scores.setdefault(s.role, []).append(s.avg_score)
+
+    role_breakdown = [
+        {"role": role, "sessions": len(scores), "avg_score": round(sum(scores) / len(scores), 2)}
+        for role, scores in role_scores.items()
+    ]
+
+    return {
+        "total_sessions": total_sessions,
+        "completed_sessions": completed_sessions,
+        "total_answered": len(answered_turns),
+        "overall_avg_score": overall_avg,
+        "best_score": best_score,
+        "role_breakdown": role_breakdown,
+    }
+
+
+@app.delete("/api/sessions/{session_id}")
+def delete_interview_session(session_id: int, db: Session = Depends(get_db)):
+    session = db.query(models.InterviewSession).filter(models.InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found")
+
+    db.query(models.InterviewTurn).filter(models.InterviewTurn.session_id == session_id).delete()
+    db.delete(session)
+    db.commit()
+    return {"deleted_id": session_id, "status": "deleted"}

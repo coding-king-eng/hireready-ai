@@ -161,3 +161,29 @@ def test_ai_engine_json_extractor():
     assert parsed_wrapped["questions"][0]["topic_tag"] == "SQL"
 
     assert ai_engine._extract_json("not valid json at all") is None
+
+def test_analytics_and_delete_session():
+    created = client.post(
+        "/api/sessions",
+        json={"role": "Android Developer (Kotlin)", "level": "Intern", "question_count": 1},
+    ).json()
+    session_id = created["id"]
+    turn_id = created["turns"][0]["id"]
+
+    client.post(
+        f"/api/sessions/{session_id}/answer",
+        json={"turn_id": turn_id, "user_answer": "StateFlow holds latest UI state while SharedFlow emits one-time events cleanly in MVVM."},
+    )
+
+    analytics = client.get("/api/analytics")
+    assert analytics.status_code == 200
+    stats = analytics.json()
+    assert stats["total_sessions"] == 1
+    assert stats["completed_sessions"] == 1
+    assert stats["total_answered"] == 1
+    assert stats["overall_avg_score"] > 0
+
+    deleted = client.delete(f"/api/sessions/{session_id}")
+    assert deleted.status_code == 200
+    assert deleted.json()["deleted_id"] == session_id
+    assert client.get(f"/api/sessions/{session_id}").status_code == 404

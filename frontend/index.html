@@ -43,57 +43,79 @@
 </header>
 
 <main class="max-w-5xl mx-auto px-4 py-8">
-    <!-- Toast / Error Banner -->
+    <!-- Error Banner -->
     <div id="errorBanner" class="hidden mb-6 p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-sm"></div>
 
-    <!-- VIEW 1: SETUP & SESSION HISTORY -->
-    <section id="setupView" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mb-4">
-          ⚡ Structured 0–10 AI Rubric Evaluation
-        </span>
-            <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
-            <p class="text-slate-400 text-sm sm:text-base mb-6">
-                Pick your target role and seniority level. Answer tailored technical questions and get instant structured feedback on strengths, missing concepts, and weak topics.
-            </p>
-
-            <form id="startForm" class="space-y-5">
-                <div>
-                    <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role</label>
-                    <select id="roleSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label for="levelSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Experience Level</label>
-                        <select id="levelSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
-                    </div>
-                    <div>
-                        <label for="countSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Question Count</label>
-                        <select id="countSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-                            <option value="3">3 Questions (Quick Sprint)</option>
-                            <option value="5" selected>5 Questions (Standard Round)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
-                    <span>Start Mock Interview</span>
-                    <span>→</span>
-                </button>
-            </form>
+    <!-- VIEW 1: SETUP, ANALYTICS & SESSION HISTORY -->
+    <section id="setupView" class="space-y-6">
+        <!-- Analytics KPI Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[11px] uppercase tracking-wider text-slate-400">Total Mocks</p>
+                <p id="kpiTotalSessions" class="text-2xl font-extrabold text-white mt-1">0</p>
+            </div>
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[11px] uppercase tracking-wider text-slate-400">Questions Graded</p>
+                <p id="kpiAnswered" class="text-2xl font-extrabold text-cyan-300 mt-1">0</p>
+            </div>
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[11px] uppercase tracking-wider text-slate-400">Overall Avg</p>
+                <p id="kpiAvgScore" class="text-2xl font-extrabold text-indigo-300 mt-1">0.0/10</p>
+            </div>
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[11px] uppercase tracking-wider text-slate-400">Best Session</p>
+                <p id="kpiBestScore" class="text-2xl font-extrabold text-emerald-400 mt-1">0.0/10</p>
+            </div>
         </div>
 
-        <!-- Recent Sessions Sidebar -->
-        <aside class="glass rounded-2xl p-6 shadow-xl flex flex-col">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
-                <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mb-4">
+            ⚡ Structured 0–10 AI Rubric Evaluation
+          </span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
+                <p class="text-slate-400 text-sm sm:text-base mb-6">
+                    Pick your target role and seniority level. Answer tailored technical questions and get instant structured feedback on strengths, missing concepts, and weak topics.
+                </p>
+
+                <form id="startForm" class="space-y-5">
+                    <div>
+                        <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role</label>
+                        <select id="roleSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="levelSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Experience Level</label>
+                            <select id="levelSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label for="countSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Question Count</label>
+                            <select id="countSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                <option value="3">3 Questions (Quick Sprint)</option>
+                                <option value="5" selected>5 Questions (Standard Round)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
+                        <span>Start Mock Interview</span>
+                        <span>→</span>
+                    </button>
+                </form>
             </div>
-            <div id="historyList" class="space-y-3 overflow-y-auto max-h-[380px] pr-1 text-sm text-slate-400">
-                Loading sessions...
-            </div>
-        </aside>
+
+            <!-- Recent Sessions Sidebar -->
+            <aside class="glass rounded-2xl p-6 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
+                    <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
+                </div>
+                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[380px] pr-1 text-sm text-slate-400">
+                    Loading sessions...
+                </div>
+            </aside>
+        </div>
     </section>
 
     <!-- VIEW 2: LIVE INTERVIEW ARENA -->
@@ -130,7 +152,10 @@
             <h3 id="questionText" class="text-lg sm:text-xl font-semibold text-white leading-relaxed"></h3>
 
             <div>
-                <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Your Answer</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Answer</label>
+                    <span id="wordCountBadge" class="text-[11px] text-slate-400">0 words</span>
+                </div>
                 <textarea
                         id="answerInput"
                         rows="6"
@@ -140,7 +165,7 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-xs text-slate-400">Tip: Structure answers with Concept → Example → Trade-off.</p>
+                <p class="text-xs text-slate-400">Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">Cmd/Ctrl + Enter</kbd> to submit quickly.</p>
                 <button id="submitAnswerBtn" onclick="submitAnswer()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-600/25 transition">
                     Submit & Evaluate Answer
                 </button>
@@ -274,7 +299,10 @@
       document.getElementById("setupView").classList.toggle("hidden", viewName !== "setup");
       document.getElementById("interviewView").classList.toggle("hidden", viewName !== "interview");
       document.getElementById("summaryView").classList.toggle("hidden", viewName !== "summary");
-      if (viewName === "setup") loadHistory();
+      if (viewName === "setup") {
+        loadHistory();
+        loadAnalytics();
+      }
     }
 
     function startTimer() {
@@ -300,6 +328,23 @@
       document.getElementById("timerDisplay").textContent = `${mins}:${secs}`;
     }
 
+    function updateWordCount() {
+      const text = document.getElementById("answerInput").value.trim();
+      const count = text ? text.split(/\s+/).length : 0;
+      document.getElementById("wordCountBadge").textContent = `${count} ${count === 1 ? "word" : "words"}`;
+    }
+
+    document.getElementById("answerInput").addEventListener("input", updateWordCount);
+    document.getElementById("answerInput").addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        const submitBtn = document.getElementById("submitAnswerBtn");
+        if (!submitBtn.classList.contains("hidden") && !submitBtn.disabled) {
+          e.preventDefault();
+          submitAnswer();
+        }
+      }
+    });
+
     async function loadRoles() {
       try {
         const res = await fetch("/api/roles");
@@ -315,6 +360,18 @@
       }
     }
 
+    async function loadAnalytics() {
+      try {
+        const res = await fetch("/api/analytics");
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("kpiTotalSessions").textContent = data.total_sessions;
+        document.getElementById("kpiAnswered").textContent = data.total_answered;
+        document.getElementById("kpiAvgScore").textContent = `${Number(data.overall_avg_score).toFixed(1)}/10`;
+        document.getElementById("kpiBestScore").textContent = `${Number(data.best_score).toFixed(1)}/10`;
+      } catch (_) {}
+    }
+
     async function loadHistory() {
       try {
         const res = await fetch("/api/sessions");
@@ -326,21 +383,42 @@
           return;
         }
         container.innerHTML = sessions.map(s => `
-          <button onclick="openExistingSession(${s.id})" class="w-full text-left p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/40 transition">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-semibold text-slate-100 text-xs truncate">${escapeHtml(s.role)}</span>
-              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${s.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}">
-                ${s.avg_score}/10
-              </span>
-            </div>
-            <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400">
-              <span>${escapeHtml(s.level)}</span>
-              <span>${s.status === 'completed' ? 'View Report →' : 'Resume →'}</span>
-            </div>
-          </button>
+          <div class="group relative p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/40 transition">
+            <button onclick="openExistingSession(${s.id})" class="w-full text-left pr-6">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-semibold text-slate-100 text-xs truncate">${escapeHtml(s.role)}</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${s.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}">
+                  ${s.avg_score}/10
+                </span>
+              </div>
+              <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400">
+                <span>${escapeHtml(s.level)}</span>
+                <span>${s.status === 'completed' ? 'View Report →' : 'Resume →'}</span>
+              </div>
+            </button>
+            <button
+              onclick="deleteSession(${s.id}, event)"
+              title="Delete session"
+              class="absolute top-2.5 right-2.5 w-5 h-5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center text-xs transition"
+            >
+              ×
+            </button>
+          </div>
         `).join("");
       } catch (err) {
         document.getElementById("historyList").innerHTML = `<p class="text-rose-400 text-xs">Failed to load history.</p>`;
+      }
+    }
+
+    async function deleteSession(sessionId, event) {
+      event.stopPropagation();
+      if (!confirm("Delete this mock interview session?")) return;
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete session.");
+        await Promise.all([loadHistory(), loadAnalytics()]);
+      } catch (err) {
+        showError(err.message);
       }
     }
 
@@ -441,6 +519,7 @@
         feedbackCard.classList.add("hidden");
         startTimer();
       }
+      updateWordCount();
     }
 
     async function submitAnswer() {
@@ -549,6 +628,7 @@
     // Boot
     loadRoles();
     loadHistory();
+    loadAnalytics();
     loadAiStatus();
 </script>
 </body>
