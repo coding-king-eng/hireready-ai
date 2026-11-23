@@ -4,9 +4,10 @@ from pydantic import BaseModel, Field
 
 class SessionCreate(BaseModel):
     role: str = Field(..., min_length=2, max_length=100)
-    level: str = Field(..., min_length=2, max_length=50)
-    question_count: int = Field(default=5, ge=1, le=10)
+    level: str = Field(..., min_length=2, max_length=60)
+    question_count: int = Field(default=5, ge=1, le=15)
     focus_topic: Optional[str] = Field(default=None, max_length=400)
+    interviewer: Optional[str] = Field(default="Aanya Sharma", max_length=100)
 
 
 class SkillExtractRequest(BaseModel):
@@ -53,6 +54,7 @@ class SessionDetailOut(BaseModel):
     id: int
     role: str
     level: str
+    interviewer: str = "Aanya Sharma"
     total_questions: int
     answered_count: int
     avg_score: float

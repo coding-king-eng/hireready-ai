@@ -4,10 +4,12 @@ from typing import List
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .ai_engine import (
+    FALLBACK_QUESTIONS,
     evaluate_answer,
     evaluate_followup,
     extract_skills_from_text,
@@ -18,10 +20,24 @@ from .database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
 
+
+def _ensure_interviewer_column():
+    """Safely adds `interviewer` column if upgrading an existing SQLite database."""
+    try:
+        with engine.begin() as conn:
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(interview_sessions)")).fetchall()]
+            if cols and "interviewer" not in cols:
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN interviewer VARCHAR(100) DEFAULT 'Aanya Sharma'"))
+    except Exception:
+        pass
+
+
+_ensure_interviewer_column()
+
 app = FastAPI(
-    title="HireReady 🧠 — AI Interview Coach API",
-    description="Role-based mock interview generator & structured AI answer evaluator",
-    version="1.0.0",
+    title="HireReady 🧠 — AI Live Video Interview Coach API",
+    description="Role-based live AI video mock interview simulator & structured rubric evaluator",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -31,6 +47,57 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+INTERVIEWER_PERSONAS = [
+    {
+        "id": "aanya",
+        "name": "Aanya Sharma",
+        "gender": "woman",
+        "title": "Senior Engineering Manager",
+        "style": "Warm, structured & encouraging",
+        "accent_hint": "Clear Neutral English",
+    },
+    {
+        "id": "marcus",
+        "name": "Marcus Vance",
+        "gender": "man",
+        "title": "Principal Systems Architect",
+        "style": "Deep-dive, analytical & scale-focused",
+        "accent_hint": "US Deep Baritone",
+    },
+    {
+        "id": "elena",
+        "name": "Elena Rostova",
+        "gender": "woman",
+        "title": "Staff Frontend & Product Lead",
+        "style": "Crisp, user-centric & detail-oriented",
+        "accent_hint": "UK / International English",
+    },
+    {
+        "id": "david",
+        "name": "David Chen",
+        "gender": "man",
+        "title": "Staff Distributed Systems Lead",
+        "style": "Calm, pragmatic & trade-off driven",
+        "accent_hint": "US Natural Tenor",
+    },
+    {
+        "id": "priya",
+        "name": "Priya Nair",
+        "gender": "woman",
+        "title": "Director of AI & Data Platform",
+        "style": "Strategic, inquisitive & metrics-first",
+        "accent_hint": "Indian / Global English",
+    },
+    {
+        "id": "liam",
+        "name": "Liam O'Connor",
+        "gender": "man",
+        "title": "VP of Engineering",
+        "style": "Executive, architectural & leadership-focused",
+        "accent_hint": "British / Irish English",
+    },
+]
 
 
 def _serialize_turn(turn: models.InterviewTurn, hide_hint_if_unanswered: bool = True) -> schemas.TurnOut:
@@ -55,6 +122,7 @@ def _serialize_session(session: models.InterviewSession) -> schemas.SessionDetai
         id=session.id,
         role=session.role,
         level=session.level,
+        interviewer=session.interviewer or "Aanya Sharma",
         total_questions=session.total_questions,
         answered_count=answered_count,
         avg_score=session.avg_score,
@@ -121,6 +189,7 @@ def health_check():
     return {
         "status": "ok",
         "service": "HireReady AI Interview Coach",
+        "version": "2.0.0",
         "ai_mode": ai_status["mode"],
         "ai_model": ai_status["model"],
     }
@@ -129,15 +198,23 @@ def health_check():
 @app.get("/api/roles")
 def get_supported_roles():
     return {
-        "roles": [
-            "Backend Developer (Python / FastAPI)",
-            "DSA & Problem Solving (SDE-1)",
-            "Frontend Engineer (React / JS)",
-            "Data Analyst (SQL & Python)",
-            "Android Developer (Kotlin)",
+        "roles": list(FALLBACK_QUESTIONS.keys()),
+        "levels": [
+            "Intern",
+            "Junior (0–2 Yrs)",
+            "Mid-Level (2–5 Yrs)",
+            "Senior (5–8 Yrs)",
+            "Staff / Principal (8+ Yrs)",
+            "Engineering Manager / Tech Lead",
         ],
-        "levels": ["Intern", "Junior (0–2 Yrs)", "Mid-Level (2–5 Yrs)"],
+        "question_counts": [3, 5, 8, 10, 12, 15],
+        "interviewers": INTERVIEWER_PERSONAS,
     }
+
+
+@app.get("/api/interviewers")
+def list_interviewers():
+    return {"interviewers": INTERVIEWER_PERSONAS}
 
 
 @app.post("/api/extract-skills", response_model=schemas.SkillExtractOut)
@@ -154,6 +231,7 @@ def list_sessions(db: Session = Depends(get_db)):
             "id": s.id,
             "role": s.role,
             "level": s.level,
+            "interviewer": s.interviewer or "Aanya Sharma",
             "total_questions": s.total_questions,
             "avg_score": s.avg_score,
             "status": s.status,
@@ -165,31 +243,31 @@ def list_sessions(db: Session = Depends(get_db)):
 
 @app.post("/api/sessions/demo", response_model=schemas.SessionDetailOut, status_code=201)
 def create_demo_session(db: Session = Depends(get_db)):
-    """Creates a realistic pre-graded 3-question mock session so visitors can preview reports immediately."""
+    """Creates a realistic pre-graded 3-question Senior mock session so visitors can preview reports immediately."""
     demo_turns = [
         {
-            "topic_tag": "Async & Concurrency",
-            "question_text": "In FastAPI, when should you define an endpoint with `async def` versus standard `def`?",
-            "user_answer": "Use `async def` when awaiting non-blocking I/O like async HTTP or DB calls so the event loop stays free, and standard `def` for blocking CPU or sync library work so FastAPI runs it in a worker threadpool.",
+            "topic_tag": "Multi-Region Architecture",
+            "question_text": "You are scaling a write-heavy global service across US, EU, and APAC regions with a 150ms p99 SLA. How do you design data partitioning, conflict resolution, and failover?",
+            "user_answer": "Geo-partition user records into home regions so writes stay local under 150ms, use async cross-region replication with CRDTs for shared counters, and configure automated DNS health-checked failover.",
             "score": 9.0,
             "strengths": [
-                "Accurately distinguished event-loop non-blocking I/O from threadpool execution.",
-                "Explained practical impact on FastAPI concurrency.",
+                "Identified regional data locality to satisfy the 150ms p99 write SLA.",
+                "Applied CRDTs and automated health-checked failover cleanly.",
             ],
-            "gaps": ["Mention that calling blocking I/O inside `async def` stalls the entire event loop."],
-            "ideal_hint": "Use `async def` for non-blocking I/O operations (awaiting async DB/HTTP calls); use standard `def` for blocking/CPU-bound work so FastAPI runs it in a separate threadpool without blocking the event loop.",
+            "gaps": ["Mention split-brain fencing tokens during primary region failover."],
+            "ideal_hint": "Geo-partition user data to home regions to keep writes local, use asynchronous cross-region replication with CRDTs or last-write-wins vector clocks for shared state, and automate DNS/anycast health-checked failover.",
         },
         {
-            "topic_tag": "Database Indexing",
-            "question_text": "How does a B-Tree database index speed up SELECT queries, and what is the performance trade-off on INSERT/UPDATE operations?",
-            "user_answer": "B-Tree keeps keys sorted for O(log n) lookup instead of scanning every row, though writes become slightly slower because the index must also be updated.",
-            "score": 7.5,
+            "topic_tag": "Zero-Downtime Schema Migration",
+            "question_text": "How do you rename and split a heavily queried 500M-row production table column with zero downtime and instant rollback safety?",
+            "user_answer": "Follow Expand-and-Contract: add new columns first, dual-write to both old and new columns, backfill old rows in small batches, verify parity, then switch reads.",
+            "score": 8.0,
             "strengths": [
-                "Correctly stated O(log n) lookup complexity vs full table scans.",
-                "Identified write amplification trade-off on INSERT/UPDATE.",
+                "Structured the rollout with Expand-and-Contract and throttled batch backfills.",
+                "Maintained backward compatibility for zero-downtime deployment.",
             ],
-            "gaps": ["Mention page splits or composite index column ordering rules."],
-            "ideal_hint": "A B-Tree index keeps sorted keys for O(log n) lookups instead of full table scans, but slows down INSERT/UPDATE/DELETE because the index tree must also be updated.",
+            "gaps": ["Include lock-timeout guardrails during initial DDL column creation."],
+            "ideal_hint": "Use the Expand-and-Contract pattern: add new columns, dual-write to both old and new schemas, backfill historical rows in throttled batches, switch reads after verification, then drop old columns later.",
         },
         {
             "topic_tag": "Caching & Scalability",
@@ -207,8 +285,9 @@ def create_demo_session(db: Session = Depends(get_db)):
 
     avg = round(sum(t["score"] for t in demo_turns) / len(demo_turns), 2)
     session = models.InterviewSession(
-        role="Backend Developer (Python / FastAPI)",
-        level="Junior (0–2 Yrs)",
+        role="System Design & Distributed Architecture",
+        level="Senior (5–8 Yrs)",
+        interviewer="Marcus Vance",
         total_questions=len(demo_turns),
         avg_score=avg,
         status="completed",
@@ -248,6 +327,7 @@ def create_interview_session(payload: schemas.SessionCreate, db: Session = Depen
     session = models.InterviewSession(
         role=payload.role,
         level=payload.level,
+        interviewer=(payload.interviewer or "Aanya Sharma").strip(),
         total_questions=len(questions),
         avg_score=0.0,
         status="in_progress",
@@ -370,6 +450,7 @@ def export_session_report(
     if format == "json":
         payload = {
             "summary": summary.model_dump(),
+            "interviewer": detail.interviewer,
             "transcript": [t.model_dump() for t in detail.turns],
         }
         return JSONResponse(
@@ -380,6 +461,7 @@ def export_session_report(
     lines = [
         f"# HireReady Interview Readiness Report — Session #{session.id}",
         "",
+        f"- **Interviewer:** {detail.interviewer}",
         f"- **Role:** {summary.role}",
         f"- **Level:** {summary.level}",
         f"- **Status:** {summary.status}",

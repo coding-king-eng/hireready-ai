@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HireReady 🧠 — AI Interview Coach</title>
+    <title>HireReady 🧠 — Live AI Video Interview Coach</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,21 +11,47 @@
           min-height: 100vh;
         }
         .glass {
-          background: rgba(15, 23, 42, 0.72);
+          background: rgba(15, 23, 42, 0.75);
           backdrop-filter: blur(14px);
           border: 1px solid rgba(148, 163, 184, 0.16);
         }
+        @keyframes subtleBreathe {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-2px) scale(1.012); }
+        }
+        @keyframes eqPulse {
+          0%, 100% { height: 5px; }
+          50% { height: 22px; }
+        }
+        .avatar-breathe {
+          animation: subtleBreathe 4s ease-in-out infinite;
+        }
+        .eq-bar {
+          width: 3px;
+          height: 5px;
+          border-radius: 999px;
+          background: #34d399;
+          transition: height 0.15s ease;
+        }
+        .speaking .eq-bar:nth-child(1) { animation: eqPulse 0.55s ease-in-out infinite 0.0s; }
+        .speaking .eq-bar:nth-child(2) { animation: eqPulse 0.45s ease-in-out infinite 0.12s; }
+        .speaking .eq-bar:nth-child(3) { animation: eqPulse 0.60s ease-in-out infinite 0.24s; }
+        .speaking .eq-bar:nth-child(4) { animation: eqPulse 0.48s ease-in-out infinite 0.08s; }
+        .speaking .eq-bar:nth-child(5) { animation: eqPulse 0.52s ease-in-out infinite 0.20s; }
     </style>
 </head>
 <body class="text-slate-100 antialiased selection:bg-indigo-500 selection:text-white flex flex-col min-h-screen">
 <!-- Navbar -->
 <header class="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-30">
-    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
         <button onclick="showView('setup')" class="flex items-center gap-2.5 text-left group">
             <span class="text-2xl">🧠</span>
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-white group-hover:text-indigo-400 transition">HireReady</h1>
-                <p class="text-[11px] text-slate-400 -mt-0.5">AI Technical Interview Coach</p>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-lg font-bold tracking-tight text-white group-hover:text-indigo-400 transition">HireReady</h1>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v2.0 Live</span>
+                </div>
+                <p class="text-[11px] text-slate-400 -mt-0.5">Live AI Video Interview Simulator</p>
             </div>
         </button>
         <div class="flex items-center gap-3">
@@ -42,11 +68,11 @@
     </div>
 </header>
 
-<main class="max-w-5xl w-full mx-auto px-4 py-8 flex-1">
+<main class="max-w-6xl w-full mx-auto px-4 py-8 flex-1">
     <!-- Error Banner -->
     <div id="errorBanner" class="hidden mb-6 p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-sm"></div>
 
-    <!-- VIEW 1: SETUP, ANALYTICS & SESSION HISTORY -->
+    <!-- VIEW 1: SETUP, INTERVIEWER PANEL, ANALYTICS & SESSION HISTORY -->
     <section id="setupView" class="space-y-6">
         <!-- Analytics KPI Strip -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -78,10 +104,10 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div class="lg:col-span-2 glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-              ⚡ Structured 0–10 AI Rubric + Voice Mode
+              🎥 Live AI Video Panel • Men & Women Voices
             </span>
                     <div class="flex flex-wrap items-center gap-2">
                         <button
@@ -97,13 +123,13 @@
                                 onclick="loadSampleDemo()"
                                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/30 transition"
                         >
-                            ✨ Sample Report
+                            ✨ Sample Senior Report
                         </button>
                     </div>
                 </div>
 
                 <!-- Collapsible Resume / Job Description Skill Extractor -->
-                <div id="resumeDrawer" class="hidden mb-6 p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 space-y-3">
+                <div id="resumeDrawer" class="hidden p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 space-y-3">
                     <div class="flex items-center justify-between">
                         <p class="text-xs font-bold uppercase tracking-wider text-indigo-300">📄 Paste Resume Bio or Job Description</p>
                         <button type="button" onclick="toggleResumeDrawer()" class="text-xs text-slate-400 hover:text-white">Close ×</button>
@@ -112,7 +138,7 @@
                             id="jdInput"
                             rows="3"
                             maxlength="4000"
-                            placeholder="Paste your skills, project summary, or a job posting (e.g., 'Backend Intern: Python, FastAPI, PostgreSQL, Redis, Docker, REST APIs')..."
+                            placeholder="Paste your skills, project summary, or a job posting (e.g., 'Staff Backend Engineer: Python, FastAPI, Kafka, Distributed Systems, Kubernetes')..."
                             class="w-full rounded-lg bg-slate-950/90 border border-slate-700 p-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                     ></textarea>
                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -128,14 +154,31 @@
                     </div>
                 </div>
 
-                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Practice like the real interview.</h2>
-                <p class="text-slate-400 text-sm sm:text-base mb-6">
-                    Pick your target role (or enter a custom track), seniority level, and focus topics. Type or speak your answers for instant AI grading.
-                </p>
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-1.5">Choose your live AI interviewer.</h2>
+                    <p class="text-slate-400 text-sm">
+                        Select a male or female interviewer persona with realistic spoken voice, pick your role & seniority up to Staff/Principal, and start a face-to-face mock round.
+                    </p>
+                </div>
+
+                <!-- Interviewer Persona Selector Grid (Women & Men) -->
+                <div class="space-y-2.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-300">🎙️ Select Interviewer (Women & Men)</label>
+                        <button
+                                type="button"
+                                onclick="previewSelectedVoice()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
+                        >
+                            🔊 Test Interviewer Voice
+                        </button>
+                    </div>
+                    <div id="interviewerGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                </div>
 
                 <form id="startForm" class="space-y-5">
                     <div>
-                        <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role</label>
+                        <label for="roleSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Target Role (12 Engineering Tracks + Custom)</label>
                         <select
                                 id="roleSelect"
                                 onchange="handleRoleChange()"
@@ -145,7 +188,7 @@
                                 id="customRoleInput"
                                 type="text"
                                 maxlength="90"
-                                placeholder="Enter your custom target role (e.g., Full Stack AI Engineer, DevOps Intern)..."
+                                placeholder="Enter your custom target role (e.g., Principal Platform Architect, GenAI Tech Lead)..."
                                 class="hidden mt-2.5 w-full rounded-xl bg-slate-900/90 border border-indigo-500/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400"
                         />
                     </div>
@@ -158,8 +201,12 @@
                         <div>
                             <label for="countSelect" class="block text-sm font-medium text-slate-300 mb-1.5">Question Count</label>
                             <select id="countSelect" class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-                                <option value="3">3 Questions (Quick Sprint)</option>
-                                <option value="5" selected>5 Questions (Standard Round)</option>
+                                <option value="3">3 Questions (Quick Sprint • ~10m)</option>
+                                <option value="5" selected>5 Questions (Standard Round • ~20m)</option>
+                                <option value="8">8 Questions (Deep Loop • ~35m)</option>
+                                <option value="10">10 Questions (Onsite Loop • ~45m)</option>
+                                <option value="12">12 Questions (Senior Marathon • ~60m)</option>
+                                <option value="15">15 Questions (Full Gauntlet • ~75m)</option>
                             </select>
                         </div>
                     </div>
@@ -172,13 +219,13 @@
                                 id="focusInput"
                                 type="text"
                                 maxlength="350"
-                                placeholder="e.g., JWT auth, Redis caching, SQL indexing, dynamic programming..."
+                                placeholder="e.g., Multi-region sharding, Redis stampede, Kubernetes probes, RAG evaluation..."
                                 class="w-full rounded-xl bg-slate-900/90 border border-slate-700 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                         />
                     </div>
 
                     <button id="startBtn" type="submit" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] font-semibold text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2">
-                        <span>Start Mock Interview</span>
+                        <span>Join Live Video Interview Room</span>
                         <span>→</span>
                     </button>
                 </form>
@@ -190,15 +237,15 @@
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Recent Sessions</h3>
                     <span id="sessionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0</span>
                 </div>
-                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[410px] pr-1 text-sm text-slate-400">
+                <div id="historyList" class="space-y-3 overflow-y-auto max-h-[540px] pr-1 text-sm text-slate-400">
                     Loading sessions...
                 </div>
             </aside>
         </div>
     </section>
 
-    <!-- VIEW 2: LIVE INTERVIEW ARENA -->
-    <section id="interviewView" class="hidden max-w-3xl mx-auto space-y-6">
+    <!-- VIEW 2: LIVE VIDEO INTERVIEW ROOM -->
+    <section id="interviewView" class="hidden space-y-6">
         <!-- Top Progress Bar & Question Navigator -->
         <div class="glass rounded-2xl p-4 sm:p-5 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-4">
@@ -224,119 +271,202 @@
             <div id="questionPills" class="flex flex-wrap items-center gap-2 pt-1"></div>
         </div>
 
-        <!-- Question Card -->
-        <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
-            <div class="flex items-center justify-between gap-2">
-          <span id="topicTag" class="px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-            Topic
-          </span>
-                <span id="turnStatusBadge" class="text-xs text-slate-400">Awaiting your answer</span>
-            </div>
+        <!-- 2-Column Live Interview Stage: Left = Realistic AI Video Feed, Right = Question & Response -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- LEFT: LIVE AI HUMAN INTERVIEWER VIDEO STAGE -->
+            <aside class="lg:col-span-5 glass rounded-2xl p-5 shadow-2xl space-y-4 lg:sticky lg:top-20">
+                <!-- Video Call Frame -->
+                <div id="videoStageCard" class="relative rounded-2xl overflow-hidden border-2 border-slate-700/80 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 transition-all duration-300">
+                    <!-- Top Call Overlay -->
+                    <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-950/80 text-emerald-300 border border-emerald-500/30">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                LIVE CALL
+              </span>
+                        <div id="voiceEqBars" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-950/80 border border-slate-800">
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                        </div>
+                    </div>
 
-            <h3 id="questionText" class="text-lg sm:text-xl font-semibold text-white leading-relaxed"></h3>
+                    <!-- Animated Realistic Human Portrait Container -->
+                    <div id="liveAvatarStage" class="w-full h-64 sm:h-72 flex items-end justify-center pt-8 overflow-hidden"></div>
 
-            <div>
-                <div class="flex items-center justify-between mb-2 gap-2">
-                    <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Answer</label>
-                    <div class="flex items-center gap-3">
-                        <button
-                                id="micBtn"
-                                type="button"
-                                onclick="toggleVoiceInput()"
-                                class="hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-                        >
-                            <span id="micIcon">🎙️</span>
-                            <span id="micLabel">Speak Answer</span>
+                    <!-- Bottom Nameplate -->
+                    <div class="bg-slate-950/90 border-t border-slate-800/90 px-4 py-3 flex items-center justify-between gap-2">
+                        <div>
+                            <p id="stageInterviewerName" class="text-sm font-bold text-white">Aanya Sharma</p>
+                            <p id="stageInterviewerTitle" class="text-[11px] text-slate-400">Senior Engineering Manager</p>
+                        </div>
+                        <span id="speakingStatusTag" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">
+                Listening
+              </span>
+                    </div>
+                </div>
+
+                <!-- Voice & Call Controls -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button
+                            type="button"
+                            onclick="speakCurrentQuestion()"
+                            class="py-2.5 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                    >
+                        <span>🔁</span>
+                        <span>Replay Question</span>
+                    </button>
+                    <button
+                            id="muteToggleBtn"
+                            type="button"
+                            onclick="toggleMuteInterviewer()"
+                            class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                    >
+                        <span id="muteIcon">🔊</span>
+                        <span id="muteLabel">Voice On</span>
+                    </button>
+                </div>
+
+                <!-- Optional OS Voice Selector -->
+                <div class="pt-1">
+                    <label for="osVoiceSelect" class="block text-[11px] uppercase tracking-wider text-slate-400 mb-1">System Voice Accent Override</label>
+                    <select
+                            id="osVoiceSelect"
+                            onchange="handleVoiceOverrideChange()"
+                            class="w-full rounded-xl bg-slate-900/90 border border-slate-800 px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+                    >
+                        <option value="auto">Auto-Matched Persona Voice</option>
+                    </select>
+                </div>
+            </aside>
+
+            <!-- RIGHT: QUESTION CARD, VOICE/TEXT INPUT & INSTANT RUBRIC FEEDBACK -->
+            <div class="lg:col-span-7 space-y-6">
+                <!-- Question Card -->
+                <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+                    <div class="flex items-center justify-between gap-2">
+              <span id="topicTag" class="px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                Topic
+              </span>
+                        <span id="turnStatusBadge" class="text-xs text-slate-400">Awaiting your answer</span>
+                    </div>
+
+                    <h3 id="questionText" class="text-lg sm:text-xl font-semibold text-white leading-relaxed"></h3>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2 gap-2">
+                            <label for="answerInput" class="block text-xs font-medium uppercase tracking-wider text-slate-400">Your Spoken / Written Response</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                        id="micBtn"
+                                        type="button"
+                                        onclick="toggleVoiceInput()"
+                                        class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
+                                >
+                                    <span id="micIcon">🎙️</span>
+                                    <span id="micLabel">Speak Answer</span>
+                                </button>
+                                <span id="wordCountBadge" class="text-[11px] text-slate-400">0 words</span>
+                            </div>
+                        </div>
+                        <textarea
+                                id="answerInput"
+                                rows="6"
+                                placeholder="Click 'Speak Answer' to talk live to your interviewer or type your structured response here..."
+                                class="w-full rounded-xl bg-slate-950/80 border border-slate-700 p-4 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
+                        ></textarea>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-xs text-slate-400">Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">Cmd/Ctrl + Enter</kbd> to submit quickly.</p>
+                        <button id="submitAnswerBtn" onclick="submitAnswer()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-600/25 transition">
+                            Submit & Evaluate Answer
                         </button>
-                        <span id="wordCountBadge" class="text-[11px] text-slate-400">0 words</span>
                     </div>
                 </div>
-                <textarea
-                        id="answerInput"
-                        rows="6"
-                        placeholder="Type or click 'Speak Answer' to explain your approach—mention trade-offs, edge cases, or time/space complexity..."
-                        class="w-full rounded-xl bg-slate-950/80 border border-slate-700 p-4 text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
-                ></textarea>
-            </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-xs text-slate-400">Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">Cmd/Ctrl + Enter</kbd> to submit quickly.</p>
-                <button id="submitAnswerBtn" onclick="submitAnswer()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-600/25 transition">
-                    Submit & Evaluate Answer
-                </button>
-            </div>
-        </div>
+                <!-- Instant AI Feedback Card -->
+                <div id="feedbackCard" class="hidden glass rounded-2xl p-6 sm:p-8 border-indigo-500/30 space-y-5">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-400">Interviewer Evaluation</p>
+                            <h4 class="text-lg font-bold text-white">Structured Rubric Feedback</h4>
+                        </div>
+                        <div class="flex items-baseline gap-1 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700">
+                            <span id="feedbackScore" class="text-2xl font-extrabold text-emerald-400">0.0</span>
+                            <span class="text-xs text-slate-400">/ 10</span>
+                        </div>
+                    </div>
 
-        <!-- Instant AI Feedback Card -->
-        <div id="feedbackCard" class="hidden glass rounded-2xl p-6 sm:p-8 border-indigo-500/30 space-y-5">
-            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400">AI Evaluation Result</p>
-                    <h4 class="text-lg font-bold text-white">Structured Rubric Feedback</h4>
-                </div>
-                <div class="flex items-baseline gap-1 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700">
-                    <span id="feedbackScore" class="text-2xl font-extrabold text-emerald-400">0.0</span>
-                    <span class="text-xs text-slate-400">/ 10</span>
-                </div>
-            </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2">✅ Strengths</h5>
+                            <ul id="strengthsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
+                        </div>
+                        <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">⚠️ Gaps to Improve</h5>
+                            <ul id="gapsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
+                        </div>
+                    </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
-                    <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2">✅ Strengths</h5>
-                    <ul id="strengthsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
-                </div>
-                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
-                    <h5 class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">⚠️ Gaps to Improve</h5>
-                    <ul id="gapsList" class="space-y-1.5 text-sm text-slate-200 list-disc list-inside"></ul>
-                </div>
-            </div>
+                    <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25">
+                        <h5 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1.5">💡 Ideal Answer Hint</h5>
+                        <p id="idealHintText" class="text-sm text-slate-200 leading-relaxed"></p>
+                    </div>
 
-            <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25">
-                <h5 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1.5">💡 Ideal Answer Hint</h5>
-                <p id="idealHintText" class="text-sm text-slate-200 leading-relaxed"></p>
-            </div>
+                    <!-- Interactive Interviewer Follow-Up Probe -->
+                    <div id="followUpWrap" class="hidden p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/25 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">🎤 Live Follow-Up Probe</h5>
+                            <button
+                                    type="button"
+                                    onclick="speakFollowUpQuestion()"
+                                    class="text-[11px] px-2.5 py-0.5 rounded-md bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-200 transition"
+                            >
+                                🔊 Hear Follow-Up
+                            </button>
+                        </div>
+                        <p id="followUpText" class="text-sm text-slate-200 leading-relaxed"></p>
 
-            <!-- Interactive Interviewer Follow-Up Probe -->
-            <div id="followUpWrap" class="hidden p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/25 space-y-3">
-                <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">🎤 Interviewer Follow-Up Probe</h5>
-                <p id="followUpText" class="text-sm text-slate-200 leading-relaxed"></p>
+                        <div class="pt-1 space-y-2">
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input
+                                        id="followUpInput"
+                                        type="text"
+                                        maxlength="1000"
+                                        placeholder="Optional: Answer the interviewer's follow-up probe..."
+                                        class="flex-1 rounded-lg bg-slate-950/90 border border-fuchsia-500/30 px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-fuchsia-400"
+                                />
+                                <button
+                                        id="submitFollowUpBtn"
+                                        type="button"
+                                        onclick="submitFollowUp()"
+                                        class="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 font-semibold text-xs text-white transition whitespace-nowrap"
+                                >
+                                    Check Follow-Up
+                                </button>
+                            </div>
+                            <div id="followUpResult" class="hidden p-3 rounded-lg bg-slate-950/80 border border-fuchsia-500/25 text-xs space-y-1">
+                                <p id="followUpVerdict" class="font-bold text-fuchsia-300"></p>
+                                <p id="followUpCoachNote" class="text-slate-200"></p>
+                                <p id="followUpBonusTip" class="text-slate-400 italic"></p>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="pt-1 space-y-2">
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input
-                                id="followUpInput"
-                                type="text"
-                                maxlength="1000"
-                                placeholder="Optional: Practice answering this follow-up probe..."
-                                class="flex-1 rounded-lg bg-slate-950/90 border border-fuchsia-500/30 px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-fuchsia-400"
-                        />
-                        <button
-                                id="submitFollowUpBtn"
-                                type="button"
-                                onclick="submitFollowUp()"
-                                class="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 font-semibold text-xs text-white transition whitespace-nowrap"
-                        >
-                            Check Follow-Up
+                    <div class="flex justify-end">
+                        <button id="nextBtn" onclick="nextQuestionOrFinish()" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition">
+                            Next Question →
                         </button>
                     </div>
-                    <div id="followUpResult" class="hidden p-3 rounded-lg bg-slate-950/80 border border-fuchsia-500/25 text-xs space-y-1">
-                        <p id="followUpVerdict" class="font-bold text-fuchsia-300"></p>
-                        <p id="followUpCoachNote" class="text-slate-200"></p>
-                        <p id="followUpBonusTip" class="text-slate-400 italic"></p>
-                    </div>
                 </div>
-            </div>
-
-            <div class="flex justify-end">
-                <button id="nextBtn" onclick="nextQuestionOrFinish()" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition">
-                    Next Question →
-                </button>
             </div>
         </div>
     </section>
 
     <!-- VIEW 3: FINAL DIAGNOSTIC SUMMARY & TRANSCRIPT REVIEW -->
-    <section id="summaryView" class="hidden max-w-3xl mx-auto space-y-6">
+    <section id="summaryView" class="hidden max-w-4xl mx-auto space-y-6">
         <div class="glass rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
                 <div>
@@ -420,8 +550,8 @@
 
 <!-- Footer -->
 <footer class="border-t border-slate-800/70 bg-slate-950/50 mt-12">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-        <p>🧠 <span class="font-semibold text-slate-300">HireReady v1.0</span> — Built with FastAPI, Google Gemini & Tailwind CSS</p>
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+        <p>🧠 <span class="font-semibold text-slate-300">HireReady v2.0</span> — Live AI Video Mock Interview Platform</p>
         <div class="flex items-center gap-4">
             <a href="https://github.com/coding-king-eng/hireready-ai" target="_blank" class="hover:text-indigo-400 transition">GitHub Source</a>
             <a href="/docs" target="_blank" class="hover:text-indigo-400 transition">OpenAPI Swagger</a>
@@ -431,6 +561,125 @@
 </footer>
 
 <script>
+    const INTERVIEWER_CATALOG = [
+      {
+        id: "aanya",
+        name: "Aanya Sharma",
+        gender: "woman",
+        title: "Senior Engineering Manager",
+        style: "Warm & structured",
+        pitch: 1.08,
+        rate: 0.99,
+        preferredVoices: ["Veena", "Samantha", "Ava", "Google UK English Female", "Microsoft Aria", "Victoria", "Karen"],
+        skin: "#e0a986",
+        skinShadow: "#c98b66",
+        hair: "#1e1b2e",
+        shirt: "#4f46e5",
+        blazer: "#1e293b",
+        bgGradient: ["#312e81", "#0f172a"],
+        hairStyle: "long-wave",
+        glasses: false,
+      },
+      {
+        id: "marcus",
+        name: "Marcus Vance",
+        gender: "man",
+        title: "Principal Systems Architect",
+        style: "Analytical & deep-dive",
+        pitch: 0.90,
+        rate: 0.97,
+        preferredVoices: ["Daniel", "Alex", "Tom", "Google UK English Male", "Microsoft Guy", "Microsoft David", "Arthur"],
+        skin: "#8d5524",
+        skinShadow: "#6f3f18",
+        hair: "#111827",
+        shirt: "#e2e8f0",
+        blazer: "#0f172a",
+        bgGradient: ["#1e3a8a", "#020617"],
+        hairStyle: "short-fade",
+        glasses: true,
+      },
+      {
+        id: "elena",
+        name: "Elena Rostova",
+        gender: "woman",
+        title: "Staff Frontend & Product Lead",
+        style: "Crisp & detail-oriented",
+        pitch: 1.12,
+        rate: 1.02,
+        preferredVoices: ["Ava", "Allison", "Samantha", "Google UK English Female", "Microsoft Jenny", "Serena", "Moira"],
+        skin: "#f3c6a5",
+        skinShadow: "#dca782",
+        hair: "#7c2d12",
+        shirt: "#0ea5e9",
+        blazer: "#1e293b",
+        bgGradient: ["#164e63", "#0f172a"],
+        hairStyle: "bob",
+        glasses: true,
+      },
+      {
+        id: "david",
+        name: "David Chen",
+        gender: "man",
+        title: "Staff Distributed Systems Lead",
+        style: "Calm & trade-off driven",
+        pitch: 0.94,
+        rate: 1.00,
+        preferredVoices: ["Alex", "Daniel", "Rishi", "Microsoft Mark", "Google US English", "Tom"],
+        skin: "#eab892",
+        skinShadow: "#cf9870",
+        hair: "#18181b",
+        shirt: "#334155",
+        blazer: "#090d16",
+        bgGradient: ["#064e3b", "#020617"],
+        hairStyle: "side-part",
+        glasses: false,
+      },
+      {
+        id: "priya",
+        name: "Priya Nair",
+        gender: "woman",
+        title: "Director of AI & Data Platform",
+        style: "Strategic & metrics-first",
+        pitch: 1.05,
+        rate: 0.98,
+        preferredVoices: ["Veena", "Karen", "Tessa", "Samantha", "Microsoft Aria", "Google UK English Female"],
+        skin: "#c6865c",
+        skinShadow: "#a96942",
+        hair: "#171717",
+        shirt: "#db2777",
+        blazer: "#1e1b4b",
+        bgGradient: ["#4c1d95", "#0f172a"],
+        hairStyle: "bun",
+        glasses: false,
+      },
+      {
+        id: "liam",
+        name: "Liam O'Connor",
+        gender: "man",
+        title: "VP of Engineering",
+        style: "Executive & leadership-focused",
+        pitch: 0.88,
+        rate: 0.96,
+        preferredVoices: ["Oliver", "Daniel", "Arthur", "Google UK English Male", "Microsoft George", "Alex"],
+        skin: "#f1c29b",
+        skinShadow: "#d8a178",
+        hair: "#92400e",
+        shirt: "#f8fafc",
+        blazer: "#1e293b",
+        bgGradient: ["#3730a3", "#020617"],
+        hairStyle: "textured",
+        glasses: false,
+      },
+    ];
+
+    let selectedInterviewer = INTERVIEWER_CATALOG[0];
+    let availableVoices = [];
+    let selectedVoiceOverride = "auto";
+    let isMuted = false;
+    let isInterviewerSpeaking = false;
+    let mouthTimer = null;
+    let blinkTimer = null;
+
     let currentSession = null;
     let lastSummaryData = null;
     let currentTurnIndex = 0;
@@ -456,6 +705,329 @@
       }
       el.textContent = msg;
       el.classList.remove("hidden");
+    }
+
+    function buildHumanAvatarSVG(persona, large = false) {
+      const uid = `${persona.id}-${large ? "lg" : "sm"}`;
+      const isWoman = persona.gender === "woman";
+
+      let hairBack = "";
+      let hairFront = "";
+      if (persona.hairStyle === "long-wave") {
+        hairBack = `<path d="M55,88 C45,135 48,185 60,210 L160,210 C172,185 175,135 165,88 Z" fill="${persona.hair}" />`;
+        hairFront = `<path d="M62,92 C62,48 158,48 158,92 C152,70 128,64 110,74 C92,64 68,70 62,92 Z" fill="${persona.hair}" />`;
+      } else if (persona.hairStyle === "bob") {
+        hairBack = `<path d="M56,88 C48,125 52,162 66,174 L154,174 C168,162 172,125 164,88 Z" fill="${persona.hair}" />`;
+        hairFront = `<path d="M62,92 C64,46 156,46 158,92 C145,68 95,66 62,92 Z" fill="${persona.hair}" />`;
+      } else if (persona.hairStyle === "bun") {
+        hairBack = `<circle cx="110" cy="44" r="24" fill="${persona.hair}" />`;
+        hairFront = `<path d="M63,92 C63,48 157,48 157,92 C142,72 78,72 63,92 Z" fill="${persona.hair}" />`;
+      } else if (persona.hairStyle === "side-part") {
+        hairFront = `<path d="M63,94 C60,48 160,46 157,94 C150,68 118,62 96,74 C80,68 68,76 63,94 Z" fill="${persona.hair}" />`;
+      } else if (persona.hairStyle === "textured") {
+        hairFront = `<path d="M63,92 C58,44 162,44 157,92 C146,66 74,66 63,92 Z" fill="${persona.hair}" />`;
+      } else {
+        hairFront = `<path d="M64,92 C64,50 156,50 156,92 C148,70 72,70 64,92 Z" fill="${persona.hair}" />`;
+      }
+
+      const glassesSvg = persona.glasses
+        ? `<g stroke="#1e293b" stroke-width="2.6" fill="rgba(255,255,255,0.08)">
+             <rect x="76" y="96" width="27" height="17" rx="5" />
+             <rect x="117" y="96" width="27" height="17" rx="5" />
+             <line x1="103" y1="104" x2="117" y2="104" />
+           </g>`
+        : "";
+
+      const earringsSvg = isWoman
+        ? `<circle cx="63" cy="119" r="3" fill="#fbbf24" /><circle cx="157" cy="119" r="3" fill="#fbbf24" />`
+        : "";
+
+      return `
+        <svg viewBox="0 0 220 220" class="${large ? "w-64 h-64 sm:w-72 sm:h-72 avatar-breathe" : "w-14 h-14 rounded-xl"}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bg-${uid}" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${persona.bgGradient[0]}" />
+              <stop offset="100%" stop-color="${persona.bgGradient[1]}" />
+            </linearGradient>
+            <linearGradient id="skin-${uid}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${persona.skin}" />
+              <stop offset="100%" stop-color="${persona.skinShadow}" />
+            </linearGradient>
+          </defs>
+          <rect width="220" height="220" fill="url(#bg-${uid})" />
+          <!-- Subtle studio bokeh -->
+          <circle cx="36" cy="46" r="18" fill="#818cf8" opacity="0.12" />
+          <circle cx="186" cy="64" r="24" fill="#38bdf8" opacity="0.10" />
+
+          ${hairBack}
+
+          <!-- Shoulders & Blazer -->
+          <path d="M32,220 C38,176 72,164 110,164 C148,164 182,176 188,220 Z" fill="${persona.blazer}" />
+          <path d="M84,166 L110,214 L136,166 Z" fill="${persona.shirt}" />
+          <path d="M82,165 L98,218 L76,218 Z" fill="#0f172a" opacity="0.35" />
+          <path d="M138,165 L122,218 L144,218 Z" fill="#0f172a" opacity="0.35" />
+
+          <!-- Neck -->
+          <rect x="94" y="138" width="32" height="34" rx="12" fill="url(#skin-${uid})" />
+          <path d="M94,144 Q110,154 126,144 L126,154 Q110,162 94,154 Z" fill="#000" opacity="0.12" />
+
+          <!-- Ears -->
+          <ellipse cx="64" cy="110" rx="6" ry="11" fill="${persona.skinShadow}" />
+          <ellipse cx="156" cy="110" rx="6" ry="11" fill="${persona.skinShadow}" />
+          ${earringsSvg}
+
+          <!-- Head / Face -->
+          <path d="M66,94 C66,58 154,58 154,94 C154,132 134,152 110,152 C86,152 66,132 66,94 Z" fill="url(#skin-${uid})" />
+
+          ${hairFront}
+
+          <!-- Eyebrows -->
+          <path d="M78,92 Q90,87 101,91" stroke="${persona.hair}" stroke-width="3.2" stroke-linecap="round" fill="none" />
+          <path d="M119,91 Q130,87 142,92" stroke="${persona.hair}" stroke-width="3.2" stroke-linecap="round" fill="none" />
+
+          <!-- Eyes -->
+          <g class="avatar-eyes">
+            <ellipse cx="90" cy="104" rx="7.5" ry="5" fill="#ffffff" />
+            <circle cx="90" cy="104" r="3.4" fill="#1e1b18" />
+            <circle cx="91.2" cy="102.8" r="1.1" fill="#ffffff" />
+
+            <ellipse cx="130" cy="104" rx="7.5" ry="5" fill="#ffffff" />
+            <circle cx="130" cy="104" r="3.4" fill="#1e1b18" />
+            <circle cx="131.2" cy="102.8" r="1.1" fill="#ffffff" />
+          </g>
+          <!-- Blinking Eyelids -->
+          <g class="avatar-eyelids" opacity="0">
+            <ellipse cx="90" cy="104" rx="8" ry="5.5" fill="${persona.skin}" />
+            <ellipse cx="130" cy="104" rx="8" ry="5.5" fill="${persona.skin}" />
+          </g>
+
+          ${glassesSvg}
+
+          <!-- Nose -->
+          <path d="M110,104 L107,119 Q110,122 114,119" stroke="${persona.skinShadow}" stroke-width="2.2" stroke-linecap="round" fill="none" />
+
+          <!-- Animated Mouth (Lips + Open Vowel Shape) -->
+          <g class="avatar-mouth-closed">
+            <path d="M97,132 Q110,138 123,132" stroke="${isWoman ? "#9f1239" : "#7c2d12"}" stroke-width="3" stroke-linecap="round" fill="none" />
+          </g>
+          <g class="avatar-mouth-open" opacity="0">
+            <ellipse cx="110" cy="133" rx="10" ry="5.5" fill="#4c0519" stroke="${isWoman ? "#be123c" : "#7c2d12"}" stroke-width="2" />
+            <path d="M102,130 Q110,132 118,130" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" />
+          </g>
+        </svg>
+      `;
+    }
+
+    function renderInterviewerSelector() {
+      const grid = document.getElementById("interviewerGrid");
+      grid.innerHTML = INTERVIEWER_CATALOG.map(p => {
+        const isSelected = p.id === selectedInterviewer.id;
+        return `
+          <button
+            type="button"
+            onclick="selectInterviewer('${p.id}')"
+            class="text-left p-3 rounded-xl border transition flex items-center gap-3 ${
+              isSelected
+                ? "bg-indigo-600/20 border-indigo-400 shadow-lg shadow-indigo-500/10"
+                : "bg-slate-900/80 hover:bg-slate-800/90 border-slate-800"
+            }"
+          >
+            <div class="shrink-0 overflow-hidden rounded-xl border border-slate-700">
+              ${buildHumanAvatarSVG(p, false)}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1">
+                <p class="text-xs font-bold text-white truncate">${escapeHtml(p.name)}</p>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 capitalize">${p.gender}</span>
+              </div>
+              <p class="text-[11px] text-indigo-300 truncate mt-0.5">${escapeHtml(p.title)}</p>
+              <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(p.style)}</p>
+            </div>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function selectInterviewer(id) {
+      const found = INTERVIEWER_CATALOG.find(p => p.id === id);
+      if (!found) return;
+      selectedInterviewer = found;
+      renderInterviewerSelector();
+      updateLiveStagePersona();
+    }
+
+    function updateLiveStagePersona() {
+      document.getElementById("liveAvatarStage").innerHTML = buildHumanAvatarSVG(selectedInterviewer, true);
+      document.getElementById("stageInterviewerName").textContent = selectedInterviewer.name;
+      document.getElementById("stageInterviewerTitle").textContent = selectedInterviewer.title;
+    }
+
+    function loadSystemVoices() {
+      if (!("speechSynthesis" in window)) return;
+      availableVoices = window.speechSynthesis.getVoices() || [];
+      const select = document.getElementById("osVoiceSelect");
+      if (!select) return;
+      const englishVoices = availableVoices.filter(v => (v.lang || "").toLowerCase().startsWith("en"));
+      const listToUse = englishVoices.length ? englishVoices : availableVoices;
+      select.innerHTML =
+        `<option value="auto">Auto-Matched Voice (${selectedInterviewer.name})</option>` +
+        listToUse
+          .map(v => `<option value="${escapeHtml(v.name)}">${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`)
+          .join("");
+      select.value = selectedVoiceOverride;
+    }
+
+    function handleVoiceOverrideChange() {
+      selectedVoiceOverride = document.getElementById("osVoiceSelect").value;
+    }
+
+    function resolveVoiceForPersona(persona) {
+      if (!availableVoices.length && "speechSynthesis" in window) {
+        availableVoices = window.speechSynthesis.getVoices() || [];
+      }
+      if (!availableVoices.length) return null;
+
+      if (selectedVoiceOverride && selectedVoiceOverride !== "auto") {
+        const manual = availableVoices.find(v => v.name === selectedVoiceOverride);
+        if (manual) return manual;
+      }
+
+      for (const pref of persona.preferredVoices) {
+        const match = availableVoices.find(v => v.name.toLowerCase().includes(pref.toLowerCase()));
+        if (match) return match;
+      }
+
+      const englishVoices = availableVoices.filter(v => (v.lang || "").toLowerCase().startsWith("en"));
+      if (persona.gender === "woman") {
+        return englishVoices.find(v => /female|woman|samantha|ava|victoria|aria|jenny|zira/i.test(v.name)) || englishVoices[0] || null;
+      }
+      return englishVoices.find(v => /male|man|daniel|alex|tom|david|guy|mark|oliver|rishi/i.test(v.name)) || englishVoices[0] || null;
+    }
+
+    function setSpeakingVisualState(active) {
+      isInterviewerSpeaking = active;
+      const eq = document.getElementById("voiceEqBars");
+      const tag = document.getElementById("speakingStatusTag");
+      const card = document.getElementById("videoStageCard");
+
+      if (active) {
+        eq.classList.add("speaking");
+        tag.textContent = "Speaking...";
+        tag.className = "text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        card.classList.add("border-emerald-400/70");
+        if (!mouthTimer) {
+          let open = false;
+          mouthTimer = setInterval(() => {
+            open = !open;
+            const stage = document.getElementById("liveAvatarStage");
+            if (!stage) return;
+            const closedEl = stage.querySelector(".avatar-mouth-closed");
+            const openEl = stage.querySelector(".avatar-mouth-open");
+            if (closedEl && openEl) {
+              closedEl.setAttribute("opacity", open ? "0" : "1");
+              openEl.setAttribute("opacity", open ? "1" : "0");
+            }
+          }, 145);
+        }
+      } else {
+        eq.classList.remove("speaking");
+        tag.textContent = "Listening";
+        tag.className = "text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-800 text-slate-300";
+        card.classList.remove("border-emerald-400/70");
+        if (mouthTimer) {
+          clearInterval(mouthTimer);
+          mouthTimer = null;
+        }
+        const stage = document.getElementById("liveAvatarStage");
+        if (stage) {
+          const closedEl = stage.querySelector(".avatar-mouth-closed");
+          const openEl = stage.querySelector(".avatar-mouth-open");
+          if (closedEl && openEl) {
+            closedEl.setAttribute("opacity", "1");
+            openEl.setAttribute("opacity", "0");
+          }
+        }
+      }
+    }
+
+    function stopInterviewerSpeech() {
+      if ("speechSynthesis" in window) {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+      }
+      setSpeakingVisualState(false);
+    }
+
+    function speakAsInterviewer(text) {
+      if (isMuted || !text || !("speechSynthesis" in window)) return;
+      stopInterviewerSpeech();
+
+      const cleanText = text.replace(/[`*_#]/g, "").trim();
+      const sentences = cleanText.match(/[^.!?]+[.!?]*/g) || [cleanText];
+      const chosenVoice = resolveVoiceForPersona(selectedInterviewer);
+
+      sentences.forEach((sentence, idx) => {
+        const trimmed = sentence.trim();
+        if (!trimmed) return;
+        const utter = new SpeechSynthesisUtterance(trimmed);
+        if (chosenVoice) utter.voice = chosenVoice;
+        utter.pitch = selectedInterviewer.pitch;
+        utter.rate = selectedInterviewer.rate;
+
+        if (idx === 0) {
+          utter.onstart = () => setSpeakingVisualState(true);
+        }
+        if (idx === sentences.length - 1) {
+          utter.onend = () => setSpeakingVisualState(false);
+          utter.onerror = () => setSpeakingVisualState(false);
+        }
+        window.speechSynthesis.speak(utter);
+      });
+    }
+
+    function previewSelectedVoice() {
+      const greeting = `Hi, I'm ${selectedInterviewer.name}, ${selectedInterviewer.title}. I'll be conducting your technical interview today. Let's dive in!`;
+      speakAsInterviewer(greeting);
+    }
+
+    function toggleMuteInterviewer() {
+      isMuted = !isMuted;
+      const icon = document.getElementById("muteIcon");
+      const label = document.getElementById("muteLabel");
+      if (isMuted) {
+        stopInterviewerSpeech();
+        icon.textContent = "🔇";
+        label.textContent = "Muted";
+      } else {
+        icon.textContent = "🔊";
+        label.textContent = "Voice On";
+        speakCurrentQuestion();
+      }
+    }
+
+    function speakCurrentQuestion() {
+      if (!currentSession || !currentSession.turns[currentTurnIndex]) return;
+      const turn = currentSession.turns[currentTurnIndex];
+      const intro = currentTurnIndex === 0
+        ? `Welcome! Let's start with question 1 on ${turn.topic_tag}. ${turn.question_text}`
+        : `Question ${turn.question_number}, focusing on ${turn.topic_tag}. ${turn.question_text}`;
+      speakAsInterviewer(intro);
+    }
+
+    function speakFollowUpQuestion() {
+      const fq = document.getElementById("followUpText").textContent.trim();
+      if (fq) speakAsInterviewer(`Here is a quick follow-up question: ${fq}`);
+    }
+
+    function startNaturalBlinking() {
+      if (blinkTimer) clearInterval(blinkTimer);
+      blinkTimer = setInterval(() => {
+        const stage = document.getElementById("liveAvatarStage");
+        if (!stage) return;
+        const lids = stage.querySelector(".avatar-eyelids");
+        if (!lids) return;
+        lids.setAttribute("opacity", "1");
+        setTimeout(() => lids.setAttribute("opacity", "0"), 130);
+      }, 3800);
     }
 
     function toggleResumeDrawer() {
@@ -557,11 +1129,12 @@
       if (isRecording) {
         stopVoiceInput();
       } else {
+        stopInterviewerSpeech();
         isRecording = true;
         const micBtn = document.getElementById("micBtn");
-        micBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse transition";
+        micBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse transition";
         document.getElementById("micIcon").textContent = "⏹️";
-        document.getElementById("micLabel").textContent = "Stop Recording";
+        document.getElementById("micLabel").textContent = "Stop Speaking";
         try { recognition.start(); } catch (_) {}
       }
     }
@@ -573,7 +1146,7 @@
       }
       const micBtn = document.getElementById("micBtn");
       if (!micBtn.classList.contains("hidden")) {
-        micBtn.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition";
+        micBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition";
         document.getElementById("micIcon").textContent = "🎙️";
         document.getElementById("micLabel").textContent = "Speak Answer";
       }
@@ -583,6 +1156,7 @@
       showError("");
       stopTimer();
       stopVoiceInput();
+      stopInterviewerSpeech();
       document.getElementById("setupView").classList.toggle("hidden", viewName !== "setup");
       document.getElementById("interviewView").classList.toggle("hidden", viewName !== "interview");
       document.getElementById("summaryView").classList.toggle("hidden", viewName !== "summary");
@@ -694,9 +1268,9 @@
         if (!sessions.length) {
           container.innerHTML = `
             <div class="space-y-3">
-              <p class="text-slate-500 text-xs">No mock sessions yet. Start an interview on the left or preview a sample report:</p>
+              <p class="text-slate-500 text-xs">No mock sessions yet. Start a live interview on the left or preview a Senior sample report:</p>
               <button onclick="loadSampleDemo()" class="w-full py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-200 text-xs font-medium transition">
-                ✨ Preview Sample Demo Report
+                ✨ Preview Senior Sample Report
               </button>
             </div>
           `;
@@ -715,6 +1289,7 @@
                 <span>${escapeHtml(s.level)}</span>
                 <span>${s.status === 'completed' ? 'View Report →' : 'Resume →'}</span>
               </div>
+              <p class="text-[10px] text-indigo-300/80 mt-1">🎙️ ${escapeHtml(s.interviewer || "Aanya Sharma")}</p>
             </button>
             <button
               onclick="deleteSession(${s.id}, event)"
@@ -781,11 +1356,12 @@
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, interviewer: selectedInterviewer.name }),
       });
       if (!res.ok) throw new Error("Failed to create interview session.");
       currentSession = await res.json();
       currentTurnIndex = 0;
+      updateLiveStagePersona();
       renderCurrentQuestion();
       showView("interview");
     }
@@ -804,7 +1380,7 @@
 
       const btn = document.getElementById("startBtn");
       btn.disabled = true;
-      btn.innerHTML = `<span>Generating Questions...</span>`;
+      btn.innerHTML = `<span>Connecting to ${escapeHtml(selectedInterviewer.name)}...</span>`;
 
       try {
         const focusVal = document.getElementById("focusInput").value.trim();
@@ -818,7 +1394,7 @@
         showError(err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Start Mock Interview</span><span>→</span>`;
+        btn.innerHTML = `<span>Join Live Video Interview Room</span><span>→</span>`;
       }
     });
 
@@ -849,12 +1425,18 @@
         const res = await fetch(`/api/sessions/${sessionId}`);
         if (!res.ok) throw new Error("Could not load session.");
         currentSession = await res.json();
+        const matchedPersona = INTERVIEWER_CATALOG.find(p => p.name === currentSession.interviewer);
+        if (matchedPersona) {
+          selectedInterviewer = matchedPersona;
+          renderInterviewerSelector();
+        }
         if (currentSession.status === "completed") {
           await loadSummary(sessionId);
           return;
         }
         const nextUnanswered = currentSession.turns.findIndex(t => t.score === null);
         currentTurnIndex = nextUnanswered >= 0 ? nextUnanswered : 0;
+        updateLiveStagePersona();
         renderCurrentQuestion();
         showView("interview");
       } catch (err) {
@@ -888,11 +1470,12 @@
 
     function renderCurrentQuestion() {
       stopVoiceInput();
+      stopInterviewerSpeech();
       const turn = currentSession.turns[currentTurnIndex];
       const total = currentSession.turns.length;
 
       document.getElementById("activeRoleLabel").textContent = currentSession.role;
-      document.getElementById("activeLevelLabel").textContent = `${currentSession.level} • Session #${currentSession.id}`;
+      document.getElementById("activeLevelLabel").textContent = `${currentSession.level} • Interviewer: ${currentSession.interviewer || selectedInterviewer.name} • Session #${currentSession.id}`;
       document.getElementById("progressText").textContent = `${currentTurnIndex + 1} / ${total}`;
       document.getElementById("progressBar").style.width = `${((currentTurnIndex + 1) / total) * 100}%`;
       renderQuestionPills();
@@ -911,7 +1494,7 @@
         submitBtn.classList.add("hidden");
         if (recognition) micBtn.classList.add("hidden");
         document.getElementById("turnStatusBadge").textContent = `Scored ${turn.score}/10`;
-        renderFeedback(turn);
+        renderFeedback(turn, false);
       } else {
         answerBox.value = "";
         answerBox.disabled = false;
@@ -922,6 +1505,7 @@
         document.getElementById("turnStatusBadge").textContent = "Awaiting your answer";
         feedbackCard.classList.add("hidden");
         startTimer();
+        speakCurrentQuestion();
       }
       updateWordCount();
     }
@@ -929,16 +1513,17 @@
     async function submitAnswer() {
       showError("");
       stopVoiceInput();
+      stopInterviewerSpeech();
       const turn = currentSession.turns[currentTurnIndex];
       const userAnswer = document.getElementById("answerInput").value.trim();
       if (!userAnswer) {
-        showError("Please type or speak your answer before submitting.");
+        showError("Please speak or type your answer before submitting.");
         return;
       }
 
       const btn = document.getElementById("submitAnswerBtn");
       btn.disabled = true;
-      btn.textContent = "Evaluating with AI...";
+      btn.textContent = `${selectedInterviewer.name} is reviewing...`;
       stopTimer();
 
       try {
@@ -956,7 +1541,7 @@
         if (recognition) document.getElementById("micBtn").classList.add("hidden");
         document.getElementById("turnStatusBadge").textContent = `Scored ${updatedTurn.score}/10`;
         renderQuestionPills();
-        renderFeedback(updatedTurn);
+        renderFeedback(updatedTurn, true);
       } catch (err) {
         showError(err.message);
         btn.disabled = false;
@@ -993,6 +1578,7 @@
         document.getElementById("followUpCoachNote").textContent = data.coach_note;
         document.getElementById("followUpBonusTip").textContent = `💡 Pro Tip: ${data.bonus_tip}`;
         document.getElementById("followUpResult").classList.remove("hidden");
+        speakAsInterviewer(`${data.verdict}. ${data.coach_note}`);
       } catch (err) {
         showError(err.message);
       } finally {
@@ -1001,7 +1587,7 @@
       }
     }
 
-    function renderFeedback(turn) {
+    function renderFeedback(turn, speakReaction = false) {
       const scoreEl = document.getElementById("feedbackScore");
       scoreEl.textContent = Number(turn.score).toFixed(1);
       scoreEl.className = `text-2xl font-extrabold ${
@@ -1029,6 +1615,13 @@
         ? "Finish & View Readiness Report →"
         : "Next Question →";
       document.getElementById("feedbackCard").classList.remove("hidden");
+
+      if (speakReaction) {
+        const firstStrength = (turn.strengths && turn.strengths[0]) ? turn.strengths[0] : "";
+        const firstGap = (turn.gaps && turn.gaps[0]) ? turn.gaps[0] : "";
+        const followText = turn.follow_up ? ` Follow-up question: ${turn.follow_up}` : "";
+        speakAsInterviewer(`You scored ${Number(turn.score).toFixed(1)} out of 10. ${firstStrength} ${firstGap}${followText}`);
+      }
     }
 
     async function nextQuestionOrFinish() {
@@ -1037,6 +1630,7 @@
         renderCurrentQuestion();
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
+        stopInterviewerSpeech();
         await loadSummary(currentSession.id);
       }
     }
@@ -1056,7 +1650,7 @@
         currentSession = detail;
 
         document.getElementById("summaryMeta").textContent =
-          `${data.role} • ${data.level} • ${data.answered_count}/${data.total_questions} Answered`;
+          `${data.role} • ${data.level} • Interviewer: ${detail.interviewer || "Aanya Sharma"} • ${data.answered_count}/${data.total_questions} Answered`;
         document.getElementById("summaryReadiness").textContent = `${data.readiness_percent}%`;
         document.getElementById("summaryVerdict").textContent = data.verdict;
         document.getElementById("summaryAvgScore").textContent = `${data.avg_score} / 10`;
@@ -1114,6 +1708,13 @@
     }
 
     // Boot
+    renderInterviewerSelector();
+    updateLiveStagePersona();
+    startNaturalBlinking();
+    loadSystemVoices();
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.onvoiceschanged = loadSystemVoices;
+    }
     initVoiceRecognition();
     loadRoles();
     loadHistory();

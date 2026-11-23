@@ -8,11 +8,12 @@ class InterviewSession(Base):
     __tablename__ = "interview_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    role = Column(String(100), nullable=False)          # e.g., Backend Developer, DSA / SDE-1
-    level = Column(String(50), nullable=False)          # e.g., Intern, Junior, Mid-Level
+    role = Column(String(100), nullable=False)
+    level = Column(String(50), nullable=False)
+    interviewer = Column(String(100), default="Aanya Sharma")
     total_questions = Column(Integer, default=5)
     avg_score = Column(Float, default=0.0)
-    status = Column(String(30), default="in_progress")  # in_progress | completed
+    status = Column(String(30), default="in_progress")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     turns = relationship("InterviewTurn", back_populates="session", cascade="all, delete-orphan")
