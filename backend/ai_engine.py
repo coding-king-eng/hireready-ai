@@ -1,12 +1,14 @@
 import json
 import os
 import random
+import re
 from typing import Any, Dict, List
 from dotenv import load_dotenv
 
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 # Curated role-specific fallback question bank (ensures 100% uptime even without an API key)
 FALLBACK_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
@@ -148,31 +150,72 @@ FALLBACK_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
 }
 
 
+def get_engine_status() -> Dict[str, str]:
+    """Reports whether live Gemini AI or deterministic fallback mode is active."""
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if key and not key.startswith("your_"):
+        return {"mode": "gemini", "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()}
+    return {"mode": "fallback", "model": "deterministic-rubric-v1"}
+
+
+def _extract_json(raw_text: str) -> Dict[str, Any] | None:
+    """Safely strips markdown fences and parses JSON returned by an LLM."""
+    if not raw_text:
+        return None
+    cleaned = raw_text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    try:
+        parsed = json.loads(cleaned)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if not match:
+            return None
+        try:
+            parsed = json.loads(match.group(0))
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            return None
+
+
+def _clean_str_list(items: Any, fallback: List[str], limit: int = 3) -> List[str]:
+    if not isinstance(items, list):
+        return fallback
+    cleaned = [str(x).strip() for x in items if str(x).strip()]
+    return cleaned[:limit] if cleaned else fallback
+
+
 def _call_gemini_json(prompt: str) -> Dict[str, Any] | None:
-    """Calls Gemini API if GEMINI_API_KEY is available and parses JSON safely."""
-    if not GEMINI_API_KEY:
+    """Calls Google Gemini API when GEMINI_API_KEY is configured and parses JSON safely."""
+    status = get_engine_status()
+    if status["mode"] != "gemini":
         return None
     try:
         from google import genai
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "").strip())
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=status["model"],
             contents=prompt,
-            config={"response_mime_type": "application/json"},
+            config={"response_mime_type": "application/json", "temperature": 0.4},
         )
-        return json.loads(response.text)
+        return _extract_json(response.text or "")
     except Exception:
         return None
 
 
 def generate_questions(role: str, level: str, count: int = 5) -> List[Dict[str, str]]:
-    """Generates `count` interview questions tailored to role and seniority level."""
+    """Generates `count` distinct, seniority-calibrated interview questions."""
     prompt = f"""
-    You are a senior technical interviewer. Generate {count} realistic interview questions for:
+    You are a senior staff engineer conducting a real technical interview.
+    Generate {count} distinct, practical interview questions tailored to:
     - Role: {role}
-    - Experience Level: {level}
+    - Seniority Level: {level}
 
-    Return valid JSON with this exact schema:
+    Rules:
+    - Cover different topics (no duplicate concepts).
+    - Calibrate depth to the {level} level (fundamentals + edge cases for Intern/Junior; system trade-offs for Mid-Level).
+    - Return ONLY valid JSON matching this exact schema:
     {{
       "questions": [
         {{
@@ -184,8 +227,18 @@ def generate_questions(role: str, level: str, count: int = 5) -> List[Dict[str, 
     }}
     """
     ai_data = _call_gemini_json(prompt)
-    if ai_data and isinstance(ai_data.get("questions"), list) and len(ai_data["questions"]) >= count:
-        return ai_data["questions"][:count]
+    if ai_data and isinstance(ai_data.get("questions"), list):
+        valid_qs = [
+            {
+                "topic_tag": str(q.get("topic_tag", "Core Concepts")).strip()[:80],
+                "question_text": str(q.get("question_text", "")).strip(),
+                "ideal_hint": str(q.get("ideal_hint", "")).strip(),
+            }
+            for q in ai_data["questions"]
+            if isinstance(q, dict) and str(q.get("question_text", "")).strip()
+        ]
+        if len(valid_qs) >= count:
+            return valid_qs[:count]
 
     pool = FALLBACK_QUESTIONS.get(role, FALLBACK_QUESTIONS["Backend Developer (Python / FastAPI)"])
     selected = random.sample(pool, min(count, len(pool)))
@@ -202,8 +255,10 @@ def evaluate_answer(
         user_answer: str,
         ideal_hint: str,
 ) -> Dict[str, Any]:
-    """Evaluates a candidate's answer and returns structured score, strengths, gaps, and ideal_hint."""
+    """Evaluates a candidate's answer and returns structured score, strengths, gaps, ideal_hint, and follow_up."""
     cleaned = (user_answer or "").strip()
+    default_follow_up = f"How would your {topic_tag} solution behave under 10x scale or an unexpected edge case?"
+
     if len(cleaned) < 10:
         return {
             "score": 1.0,
@@ -213,6 +268,7 @@ def evaluate_answer(
                 f"Include core principles of {topic_tag} and a concrete trade-off or example.",
             ],
             "ideal_hint": ideal_hint,
+            "follow_up": f"Can you walk through a concrete example of {topic_tag} step by step?",
         }
 
     prompt = f"""
@@ -223,27 +279,33 @@ def evaluate_answer(
     - Reference Key Points: {ideal_hint}
     - Candidate Answer: {cleaned}
 
-    Grade the candidate fairly from 0.0 to 10.0 and return ONLY valid JSON:
+    Grade the candidate fairly from 0.0 to 10.0 based on technical accuracy, completeness, and clarity.
+    Return ONLY valid JSON:
     {{
       "score": 7.5,
       "strengths": ["Specific positive point 1", "Specific positive point 2"],
       "gaps": ["Missing concept or edge case 1", "Improvement suggestion 2"],
-      "ideal_hint": "Concise 2-3 sentence ideal answer"
+      "ideal_hint": "Concise 2-3 sentence ideal answer",
+      "follow_up": "One sharp follow-up question an interviewer would ask next based on this answer"
     }}
     """
     ai_eval = _call_gemini_json(prompt)
     if ai_eval and "score" in ai_eval:
-        score = max(0.0, min(10.0, float(ai_eval.get("score", 5.0))))
+        try:
+            score = max(0.0, min(10.0, float(ai_eval.get("score", 5.0))))
+        except (TypeError, ValueError):
+            score = 5.0
         return {
             "score": round(score, 1),
-            "strengths": ai_eval.get("strengths", ["Clear structure in response."])[:3],
-            "gaps": ai_eval.get("gaps", ["Add concrete complexity or edge-case analysis."])[:3],
-            "ideal_hint": ai_eval.get("ideal_hint", ideal_hint),
+            "strengths": _clean_str_list(ai_eval.get("strengths"), ["Clear structure in response."]),
+            "gaps": _clean_str_list(ai_eval.get("gaps"), ["Add concrete complexity or edge-case analysis."]),
+            "ideal_hint": str(ai_eval.get("ideal_hint") or ideal_hint).strip(),
+            "follow_up": str(ai_eval.get("follow_up") or default_follow_up).strip(),
         }
 
     # Deterministic keyword & structure rubric fallback when offline / no API key
-    hint_words = {w.lower().strip(".,():;") for w in ideal_hint.split() if len(w) > 4}
-    ans_words = {w.lower().strip(".,():;") for w in cleaned.split()}
+    hint_words = {w.lower().strip(".,():;`") for w in ideal_hint.split() if len(w) > 4}
+    ans_words = {w.lower().strip(".,():;`") for w in cleaned.split()}
     overlap = len(hint_words.intersection(ans_words))
     coverage_ratio = overlap / max(1, len(hint_words))
 
@@ -270,4 +332,5 @@ def evaluate_answer(
         "strengths": strengths,
         "gaps": gaps,
         "ideal_hint": ideal_hint,
+        "follow_up": default_follow_up,
     }

@@ -9,6 +9,7 @@ from .ai_engine import evaluate_answer, generate_questions
 from .database import engine, get_db
 from pathlib import Path
 from fastapi.responses import FileResponse
+from .ai_engine import evaluate_answer, generate_questions, get_engine_status
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -65,8 +66,13 @@ def serve_frontend():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "HireReady AI Interview Coach"}
-
+    ai_status = get_engine_status()
+    return {
+        "status": "ok",
+        "service": "HireReady AI Interview Coach",
+        "ai_mode": ai_status["mode"],
+        "ai_model": ai_status["model"],
+    }
 
 @app.get("/api/roles")
 def get_supported_roles():
@@ -174,7 +180,9 @@ def submit_turn_answer(session_id: int, payload: schemas.AnswerSubmit, db: Sessi
 
     db.commit()
     db.refresh(turn)
-    return _serialize_turn(turn, hide_hint_if_unanswered=False)
+    turn_out = _serialize_turn(turn, hide_hint_if_unanswered=False)
+    turn_out.follow_up = result.get("follow_up")
+    return turn_out
 
 
 @app.get("/api/sessions/{session_id}/summary", response_model=schemas.SessionSummaryOut)

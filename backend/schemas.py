@@ -23,6 +23,7 @@ class TurnOut(BaseModel):
     strengths: List[str] = []
     gaps: List[str] = []
     ideal_hint: Optional[str] = None
+    follow_up: Optional[str] = None
 
 
 class SessionDetailOut(BaseModel):

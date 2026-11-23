@@ -29,6 +29,9 @@
             </div>
         </button>
         <div class="flex items-center gap-3">
+        <span id="aiModeBadge" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+          Checking AI...
+        </span>
             <button onclick="showView('setup')" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
                 + New Mock
             </button>
@@ -171,6 +174,11 @@
             <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25">
                 <h5 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-1.5">💡 Ideal Answer Hint</h5>
                 <p id="idealHintText" class="text-sm text-slate-200 leading-relaxed"></p>
+            </div>
+
+            <div id="followUpWrap" class="hidden p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/25">
+                <h5 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300 mb-1.5">🎤 Interviewer Follow-Up Probe</h5>
+                <p id="followUpText" class="text-sm text-slate-200 leading-relaxed"></p>
             </div>
 
             <div class="flex justify-end">
@@ -336,6 +344,21 @@
       }
     }
 
+    async function loadAiStatus() {
+      try {
+        const res = await fetch("/health");
+        const data = await res.json();
+        const badge = document.getElementById("aiModeBadge");
+        if (data.ai_mode === "gemini") {
+          badge.textContent = `✨ Gemini Live (${data.ai_model})`;
+          badge.className = "hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+        } else {
+          badge.textContent = "⚡ Offline Rubric Mode";
+          badge.className = "hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30";
+        }
+      } catch (_) {}
+    }
+
     document.getElementById("startForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       showError("");
@@ -468,6 +491,14 @@
         .map(item => `<li>${escapeHtml(item)}</li>`).join("");
       document.getElementById("idealHintText").textContent = turn.ideal_hint || "";
 
+      const followUpWrap = document.getElementById("followUpWrap");
+      if (turn.follow_up) {
+        document.getElementById("followUpText").textContent = turn.follow_up;
+        followUpWrap.classList.remove("hidden");
+      } else {
+        followUpWrap.classList.add("hidden");
+      }
+
       const isLast = currentTurnIndex >= currentSession.turns.length - 1;
       document.getElementById("nextBtn").textContent = isLast
         ? "Finish & View Readiness Report →"
@@ -518,6 +549,7 @@
     // Boot
     loadRoles();
     loadHistory();
+    loadAiStatus();
 </script>
 </body>
 </html>
